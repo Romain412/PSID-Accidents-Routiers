@@ -11,7 +11,7 @@
 ```
   
 🚗 Accidents Routiers — Dashboard & Dataviz
-Projet SI et Données (PSID) — 2024/2025
+Projet SI et Données (PSID) — 2025/2026
 
 Analyse et visualisation des accidents corporels de la circulation routière en France — données ONISR 2024
 </div>
