@@ -13,10 +13,17 @@
 🚗 Accidents Routiers — Dashboard & Dataviz
 Projet SI et Données (PSID) — 2025/2026
 
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Chakra UI](https://img.shields.io/badge/Chakra_UI-3-319795?style=flat-square&logo=chakraui&logoColor=white)](https://chakra-ui.com/)
+[![Recharts](https://img.shields.io/badge/Recharts-2-22B5BF?style=flat-square)](https://recharts.org/)
+[![License](https://img.shields.io/badge/Licence-Open_Licence_2.0-blue?style=flat-square)](https://www.etalab.gouv.fr/wp-content/uploads/2014/05/Licence_Ouverte.pdf)
+
 Analyse et visualisation des accidents corporels de la circulation routière en France — données ONISR 2024
 </div>
 
-📖 À propos
+## 📖 À propos
+
 Ce projet est réalisé dans le cadre du cours Projet Systèmes d'Information et Données (PSID).
 Il s'appuie sur les données officielles du fichier BAAC (Bulletin d'Analyse des Accidents Corporels), publiées par le Ministère de l'Intérieur via data.gouv.fr, couvrant l'ensemble des accidents corporels survenus en France en 2024.
 
@@ -52,7 +59,8 @@ PSID-Accidents-Routiers/
 └── README.md
 ```
 
-📊 Dataset
+## 📊 Dataset
+
 Les données proviennent du fichier national BAAC — Année 2024, composé de 4 fichiers CSV reliés par `Num_Acc` :
 
 | Fichier | Contenu principal |
@@ -64,12 +72,14 @@ Les données proviennent du fichier national BAAC — Année 2024, composé de 4
 
 *Source : data.gouv.fr — Ministère de l'Intérieur — Licence Ouverte 2.0*
 
-📈 Axes d'analyse
+## 📈 Axes d'analyse
+
 - **Axe 1 — Profil des victimes :** Gravité, pyramide des âges, répartition par sexe.
 - **Axe 2 — Temporalité & Géographie :** Évolution mensuelle, Heatmap horaire, cartographie par département.
 - **Axe 3 — Facteurs aggravants :** Luminosité, météo, type de route et infrastructures.
 
-🛠️ Stack technique
+## 🛠️ Stack technique
+
 | Couche | Technologie |
 | :--- | :--- |
 | **Frontend** | React 18, Vite, Chakra UI |
@@ -78,7 +88,7 @@ Les données proviennent du fichier national BAAC — Année 2024, composé de 4
 | **Base de données** | PostgreSQL (ou SQLite en dev) |
 | **Parsing Data** | Pandas (Python) / PapaParse (JS) |
 
-🚀 Installation & lancement
+## 🚀 Installation & lancement
 
 1. Cloner le projet
 ```bash
