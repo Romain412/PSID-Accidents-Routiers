@@ -23,22 +23,34 @@ Il s'appuie sur les données officielles du fichier BAAC (Bulletin d'Analyse des
 L'objectif est de transformer ces données brutes en visualisations interactives pour répondre à trois grandes questions :
 *Qui est le plus à risque ? Quand et où les accidents sont-ils les plus graves ? Quelles conditions aggravent la mortalité ?*
 
-🗂️ Structure du projet
+## 🗂️ Structure du projet
+ 
+```
 PSID-Accidents-Routiers/
 │
 ├── 📁 front/                        # Application web (React + Vite)
-│   ├── src/
-│   │   ├── components/              # Composants UI et graphiques (Recharts)
-│   │   ├── pages/                   # Home et Dashboard
-│   │   └── services/                # Appels API vers le backend
+│   ├── public/
+│   └── src/
+│       ├── assets/
+│       ├── components/
+│       │   ├── Navbar.jsx
+│       │   ├── Footer.jsx
+│       │   └── charts/              # Composants graphiques
+│       │       ├── GravityDonut.jsx
+│       │       ├── AgeBarChart.jsx
+│       │       ├── HeatmapHeure.jsx
+│       │       └── ...
+│       ├── pages/
+│       │   ├── Home.jsx             # Page d'accueil
+│       │   └── Dashboard.jsx        # Dashboard principal
+│       ├── data/                    # CSV parsés / JSON précalculés
+│       ├── App.jsx
+│       └── main.jsx
 │
-├── 📁 back/                         # API REST (Django + Django Rest Framework)
-│   ├── core/                        # Configuration projet Django
-│   ├── accidents/                   # Application principale (Modèles & Vues)
-│   ├── data/                        # Scripts d'import et fichiers CSV sources
-│   └── manage.py
+├── 📁 back/                         # Backend (Partie 2 du projet)
 │
 └── README.md
+```
 
 📊 Dataset
 Les données proviennent du fichier national BAAC — Année 2024, composé de 4 fichiers CSV reliés par `Num_Acc` :
