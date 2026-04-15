@@ -14,9 +14,13 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
+
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include # 1. N'oublie pas d'importer 'include'
 
 urlpatterns = [
+    # Le <int:num_acc> permet de capturer le numéro directement dans l'URL
     path('admin/', admin.site.urls),
+    path('api/', include('api.urls')),
 ]
