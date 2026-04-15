@@ -4,6 +4,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from .models import Accident
 from django.forms.models import model_to_dict # 1. On importe cet outil magique
+from django.views.decorators.cache import cache_page
+
 
 def get_accident_details(request, num_acc):
     try:
@@ -29,3 +31,23 @@ def get_accident_details(request, num_acc):
     except Accident.DoesNotExist:
         # Sécurité : si le Num_Acc n'existe pas en base
         return JsonResponse({"erreur": "Cet accident n'existe pas dans la base de données."}, status=404)
+
+@cache_page(60 * 15)
+def get_all_locations(request):
+    """
+    Renvoie uniquement les coordonnées pour alléger le chargement de la carte.
+    """
+    # On récupère les accidents qui ont bien une latitude et une longitude
+    accidents = Accident.objects.filter(lat__isnull=False, long__isnull=False)
+    accidents = accidents[:10000] #pour l'instant on limite le nb d'accidents pour de meilleures performances
+    
+    data = []
+    for acc in accidents:
+        # On s'assure de convertir les Decimal en float pour le JSON
+        data.append({
+            "id": acc.Num_Acc,
+            "lat": float(acc.lat),
+            "long": float(acc.long)
+        })
+        
+    return JsonResponse(data, safe=False)
