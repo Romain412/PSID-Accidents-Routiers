@@ -98,13 +98,35 @@ cd PSID-Accidents-Routiers
 
 ### Lancer le back-end
 
+#### Windows
+
 ```bash
-cd back
+cd backend
 python -m venv venv
-source venv/bin/activate  # (ou venv\Scripts\activate sur Windows)
+venv\Scripts\activate
+
+pip install --upgrade pip
 pip install -r requirements.txt
+
+python manage.py import_csv
 python manage.py migrate
 python manage.py runserver
+```
+
+#### MacOS :
+
+```bash
+cd backend
+
+python3.12 -m venv venv
+source venv/bin/activate
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+python manage.py import_csv
+python manage.py makemigrations
+python manage.py migrate
 ```
 
 L'API sera disponible sur http://localhost:8000
