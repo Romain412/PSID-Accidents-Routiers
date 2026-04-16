@@ -6,5 +6,13 @@ urlpatterns = [
     path('accidents/locations/', views.get_all_locations, name='accident_locations'),
     # Attention, on ne remet pas "api/" ici car core/urls.py s'en est déjà chargé !
     path('accident/<int:num_acc>/', views.get_accident_details, name='accident_details'),
-    
+    path('accidents/locations/', views.get_all_locations),
+
+    path('stats/rain-correlation/', views.stats_rain_correlation),
+    path('stats/vehicle-types/', views.stats_vehicle_types),
+    path('stats/age-distribution/', views.stats_age_distribution),
+    path('stats/road-types/', views.stats_road_types),
+    path('stats/holiday-periods/', views.stats_holiday_periods),
+    path('stats/heatmap/', views.stats_heatmap),
+
 ]
