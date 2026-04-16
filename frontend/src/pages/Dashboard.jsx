@@ -1,9 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Container, Heading, Text, Flex, Box} from '@chakra-ui/react';
+import { Container, Heading, Text, Flex, Box, SimpleGrid } from '@chakra-ui/react';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
+
+/* FUTURS COMPOSANTS DE GRAPHIQUES */
+import RainCorrelationChart from '../components/charts/RainCorrelationChart';
+import VehicleTypeChart from '../components/charts/VehicleTypeChart';
+import AgeAccidentChart from '../components/charts/AgeAccidentChart';
+import RoadTypeChart from '../components/charts/RoadTypeChart';
+import HolidayChart from '../components/charts/HolidayChart';
+import HeatmapChart from '../components/charts/HeatmapChart';
+
+
+function StatCard({ title, children }) {
+    return (
+        <Box bg="white" p={5} borderRadius="lg" boxShadow="md">
+            <Heading size="md" mb={4}>{title}</Heading>
+            {children}
+        </Box>
+    );
+}
 
 export default function Dashboard() {
     const [locations, setLocations] = useState([]);
@@ -58,12 +76,15 @@ export default function Dashboard() {
 
     return (
         <Container maxW="container.xl" py={8}>
-            <Heading mb={2}>Tableau de bord des Accidents (2024)</Heading>
-            <Text color="gray.600" mb={6}>Sélectionnez un point sur la carte pour voir les détails de l'accident.</Text>
+            <Heading mb={2} fontWeight="bold">Tableau de bord des Accidents (2024)</Heading>
+
+            <Heading mb={1} mt={6}>Carte des accidents</Heading>
+
+            <Text color="gray.600" mb={3}>Sélectionnez un point sur la carte pour voir les détails de l'accident.</Text>
 
             {/* Flex permet de mettre la carte et les détails côte à côte */}
             <Flex gap={6} h="70vh">
-                
+
                 {/* --- SECTION GAUCHE : LA CARTE --- */}
                 <Box flex={2} borderRadius="lg" overflow="hidden" boxShadow="md">
                     <MapContainer center={[46.2276, 2.2137]} zoom={6} style={{ height: '100%', width: '100%' }} preferCanvas={true}>
@@ -72,17 +93,17 @@ export default function Dashboard() {
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         />
                         <MarkerClusterGroup chunkedLoading={true} iconCreateFunction={createCustomClusterIcon} showCoverageOnHover={false} >
-                        {locations.map(loc => (
-                            <CircleMarker
-                                key={loc.id}
-                                center={[loc.lat, loc.long]}
-                                radius={5}
-                                pathOptions={{ color: 'red', fillColor: '#e53e3e', fillOpacity: 0.8 }}
-                                eventHandlers={{
-                                    click: () => handlePointClick(loc.id),
-                                }}
-                            />
-                        ))}
+                            {locations.map(loc => (
+                                <CircleMarker
+                                    key={loc.id}
+                                    center={[loc.lat, loc.long]}
+                                    radius={5}
+                                    pathOptions={{ color: 'red', fillColor: '#e53e3e', fillOpacity: 0.8 }}
+                                    eventHandlers={{
+                                        click: () => handlePointClick(loc.id),
+                                    }}
+                                />
+                            ))}
                         </MarkerClusterGroup>
                     </MapContainer>
                 </Box>
@@ -97,10 +118,10 @@ export default function Dashboard() {
                             <Heading size="md" color="blue.600" mb={4}>
                                 Accident N° {selectedAccident.caracteristiques.Num_Acc}
                             </Heading>
-                            
+
                             {/* Notre ligne de séparation sécurisée */}
                             <Box borderBottomWidth="1px" borderColor="gray.300" w="100%" mb={4} />
-                            
+
                             <Box mb={6}>
                                 <Text><strong>Date :</strong> {selectedAccident.caracteristiques.date_formatee}</Text>
                                 <Text><strong>Heure :</strong> {selectedAccident.caracteristiques.hrmn}</Text>
@@ -122,7 +143,7 @@ export default function Dashboard() {
                                 {selectedAccident.usagers.map(usa => (
                                     <Box key={usa.id_usager} p={3} mb={2} bg="white" borderRadius="md" shadow="sm" borderWidth="1px">
                                         <Text>
-                                            <strong>Sexe :</strong> {usa.sexe === 1 ? 'Homme' : 'Femme'} <br/>
+                                            <strong>Sexe :</strong> {usa.sexe} <br />
                                             <strong>Gravité :</strong> {usa.grav}
                                         </Text>
                                     </Box>
@@ -140,6 +161,43 @@ export default function Dashboard() {
                     )}
                 </Box>
             </Flex>
+
+            <Box
+                borderBottomWidth="2px"
+                borderColor="gray.300"
+                my={5}
+                w="100%"
+            />
+
+            {/* ===================== GRAPHIQUES ===================== */}
+
+            <Heading mb={6}>Analyses statistiques</Heading>
+
+            <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={6}>
+                <StatCard title="Corrélation pluie / chaussée / type d'accident">
+                    <RainCorrelationChart />
+                </StatCard>
+
+                <StatCard title="Proportion des types de véhicules">
+                    <VehicleTypeChart />
+                </StatCard>
+
+                <StatCard title="Répartition âge / accidents">
+                    <AgeAccidentChart />
+                </StatCard>
+
+                <StatCard title="Type de routes / accidents">
+                    <RoadTypeChart />
+                </StatCard>
+
+                <StatCard title="Vacances / accidents">
+                    <HolidayChart />
+                </StatCard>
+
+                <StatCard title="Zones accidentogènes / Heatmap">
+                    <HeatmapChart />
+                </StatCard>
+            </SimpleGrid>
         </Container>
     );
 }
