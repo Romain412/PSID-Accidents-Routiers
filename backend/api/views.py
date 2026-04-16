@@ -39,7 +39,7 @@ def get_all_locations(request):
     """
     # On récupère les accidents qui ont bien une latitude et une longitude
     accidents = Accident.objects.filter(lat__isnull=False, long__isnull=False)
-    accidents = accidents[:10000] #pour l'instant on limite le nb d'accidents pour de meilleures performances
+    accidents = accidents[:10] #pour l'instant on limite le nb d'accidents pour de meilleures performances
     
     data = []
     for acc in accidents:
