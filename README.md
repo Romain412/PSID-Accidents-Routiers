@@ -206,12 +206,13 @@ L'application est déployée sur **Render** :
 | Service | URL |
 | :--- | :--- |
 | Frontend | [psid-accidents-routiers-front.onrender.com](https://psid-accidents-routiers-front.onrender.com/) |
+| Backend | [psid-accidents-routiers.onrender.com](https://psid-accidents-routiers.onrender.com/) |
 
 ---
 
 ## 👥 Équipe
 
-| | |
+| Membre | Rôle |
 | :--- | :--- |
 | **Kevin SOARES** | Développement & Data |
 | **Romain THOMAS** | Développement & Data |
