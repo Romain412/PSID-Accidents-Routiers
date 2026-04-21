@@ -19,7 +19,7 @@ const ANALYSES = {
     },
     "Répartition âge / gravité": {
         pourquoi: "La pyramide des âges croisée avec la gravité permet d'identifier deux types de sur-risque distincts : le risque d'être impliqué dans un accident (fréquence) et le risque de mourir ou d'être gravement blessé une fois impliqué (létalité). Ces deux dimensions ne concernent pas les mêmes populations.",
-        analyse: "Les 18-25 ans sont la tranche la plus représentée en volume absolu, portés par l'inexpérience, une forte mobilité et des comportements à risque plus fréquents. À l'inverse, les 65 ans et plus présentent un profil de létalité élevée : bien que moins souvent impliqués, leur proportion de tués et blessés graves parmi les accidentés est significativement plus haute. La fragilité physiologique amplifie les conséquences d'un traumatisme à énergie équivalente.",
+        analyse: "On voit sur ce graphique que les 41-65 ans constituent la tranche d'âge la plus représentée en volume absolu d'accidents (près de 40 000 usagers impliqués). Nous l'expliquons par l'exposition aux accidents qui est maximale pour cette tranche. En effet, elle correspond à la population active effectuant le plus de déplacements, notamment professionnels ou pour des motifs de trajet domicile-travail. C'est dans ce groupe que l'on enregistre le plus grand nombre de personnes indemnes (vert) et de blessés légers (jaune) en valeur absolue. Les 18-25 ans et les 26-40 ans suivent avec des volumes importants, reflétant les risques liés à l'apprentissage de la conduite et à une mobilité plus forte. À l'inverse, les 65 ans et plus présentent un profil de vulnérabilité spécifique. Bien qu'ils soient significativement moins souvent impliqués en valeur absolue (volume total proche de celui des 0-17 ans), la proportion de personnes tuées (rouge) et de blessés hospitalisés (orange) au sein de leur groupe est proportionnellement beaucoup plus élevée.",
         nuance: "Ce graphique illustre la distinction cruciale entre population exposée et population vulnérable — deux cibles différentes pour deux politiques publiques différentes : prévention comportementale pour les jeunes, adaptation de l'environnement routier pour les seniors.",
     },
     "Accidents par saisons": {
@@ -61,7 +61,6 @@ function StatCard({ title, children }) {
             >
                 <Heading size="md" color="gray.700">{title}</Heading>
                 
-                {/* La flèche agrandie et animée */}
                 <Box
                     transition="transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
                     transform={open ? 'rotate(180deg)' : 'rotate(0deg)'}
@@ -71,7 +70,7 @@ function StatCard({ title, children }) {
                 >
                     <Icon 
                         as={LuChevronDown} 
-                        boxSize="7" // Taille de l'icône (28px environ)
+                        boxSize="7"
                         color={open ? "blue.500" : "gray.400"} 
                     />
                 </Box>
@@ -86,7 +85,7 @@ function StatCard({ title, children }) {
                     borderLeft="4px solid" 
                     borderColor="blue.400" 
                     fontSize="sm"
-                    animation="slide-down 0.2s ease-out" // Optionnel : petit effet d'apparition
+                    animation="slide-down 0.2s ease-out"
                 >
                     <Text fontWeight="bold" color="blue.800" mb={1} fontSize="xs" textTransform="uppercase" letterSpacing="wider">
                         Pourquoi ce graphique ?

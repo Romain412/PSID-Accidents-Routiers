@@ -10,14 +10,12 @@ import {
     Cell
 } from 'recharts';
 
-// Couleurs saisonnières pour différencier les 4 barres
 const COLORS = ['#3182CE', '#38A169', '#E53E3E', '#DD6B20']; 
 
 export default function HolidayChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        // Appel à l'endpoint qui renvoie les 4 périodes (Hiver, Printemps, Été, Automne)
         fetch('https://psid-accidents-routiers.onrender.com/api/stats/holiday-periods/')
             .then(res => res.json())
             .then(setData)

@@ -4,7 +4,6 @@ import {
     CartesianGrid, Legend
 } from 'recharts';
 
-// Couleurs par libellé exact stocké en base (MAP_GRAV dans import_csv.py)
 const GRAVITY_COLORS = {
     'Tué':                '#C53030',
     'Blessé hospitalisé': '#DD6B20',
@@ -78,10 +77,7 @@ export default function SexGravityChart() {
                     barGap={2}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    {/*
-                      * dataKey="sexe" correspond à la clé retournée par stats_sex_gravity(),
-                      * dont les valeurs sont 'Masculin' / 'Féminin' (MAP_SEXE dans import_csv.py)
-                    */}
+
                     <XAxis dataKey="sexe" tick={{ fontSize: 13 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip content={<CustomTooltip />} />

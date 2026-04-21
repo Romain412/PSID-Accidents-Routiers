@@ -14,13 +14,10 @@ class Command(BaseCommand):
         Gère automatiquement le nettoyage des '.0' générés par Pandas pour les nombres avec valeurs nulles.
         """
         if col_name in df.columns:
-            # 1. ASTUCE ICI : On force d'abord la colonne entière à accepter du texte
             df[col_name] = df[col_name].astype(object)
             
-            # 2. On convertit en string et on retire le '.0'
             clean_col = df[col_name].dropna().astype(str).str.replace(r'\.0$', '', regex=True)
             
-            # 3. On mappe avec le dictionnaire
             df.loc[clean_col.index, col_name] = clean_col.map(mapping).fillna(clean_col)
 
     def handle(self, *args, **kwargs):

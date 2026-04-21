@@ -3,7 +3,6 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
 
-// Libellés officiels selon la documentation du fichier LIEUX
 const ROAD_LABELS = {
     1: "Autoroute",
     2: "Route nationale",
@@ -22,7 +21,6 @@ export default function RoadTypeChart() {
         fetch('https://psid-accidents-routiers.onrender.com/api/stats/road-types/')
             .then(res => res.json())
             .then(rawData => {
-                // Conversion des codes catr en noms lisibles
                 const formattedData = rawData.map(item => ({
                     ...item,
                     name: ROAD_LABELS[item.catr] || `Code ${item.catr}`

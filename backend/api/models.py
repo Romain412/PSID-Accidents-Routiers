@@ -15,7 +15,6 @@ class Accident(models.Model):
     com = models.CharField(max_length=255, null=True, blank=True)
     agg = models.CharField(max_length=255, null=True, blank=True)
     
-    # 'int' est un mot réservé. On utilise db_column pour forcer le nom dans la base.
     intersection_col = models.CharField(db_column='int', max_length=255, null=True, blank=True) 
     
     atm = models.CharField(max_length=255, null=True, blank=True)

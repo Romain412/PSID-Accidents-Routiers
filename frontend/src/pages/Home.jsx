@@ -18,7 +18,7 @@ export default function Home() {
     <Container maxW="6xl" py={20}>
       <VStack spaceY={12} align="stretch">
         
-        {/* --- Hero Section --- */}
+        
         <VStack spaceY={4} align="center" textAlign="center">
           <Badge colorPalette="blue" variant="surface" px={3} py={1} borderRadius="full">
             Projet SI et Données (PSID) — 2025/2026
@@ -34,7 +34,7 @@ export default function Home() {
 
         <Separator />
 
-        {/* --- Statistiques / Overview Cards --- */}
+        
         <SimpleGrid columns={{ base: 1, md: 3 }} gap={8}>
           <FeatureCard 
             icon={LuDatabase} 
@@ -53,7 +53,7 @@ export default function Home() {
           />
         </SimpleGrid>
 
-        {/* --- Info Section --- */}
+        
         <Box p={{ base: 6, md: 10 }} bg="blue.50" borderRadius="3xl" border="1px solid" borderColor="blue.100">
           <Stack direction={{ base: "column", md: "row" }} justify="space-between" align="center" gap={8}>
             <VStack align="flex-start" spaceY={4}>
@@ -94,7 +94,6 @@ export default function Home() {
   )
 }
 
-/* Petit composant interne pour les cartes de fonctionnalités */
 function FeatureCard({ icon, title, text }) {
   return (
     <VStack 

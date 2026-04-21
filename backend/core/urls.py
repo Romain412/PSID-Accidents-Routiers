@@ -17,10 +17,10 @@ Including another URLconf
 
 
 from django.contrib import admin
-from django.urls import path, include # 1. N'oublie pas d'importer 'include'
+from django.urls import path, include
 
 urlpatterns = [
-    # Le <int:num_acc> permet de capturer le numéro directement dans l'URL
+    
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
 ]

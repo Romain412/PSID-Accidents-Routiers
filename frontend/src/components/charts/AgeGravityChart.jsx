@@ -4,7 +4,6 @@ import {
     CartesianGrid, Legend
 } from 'recharts';
 
-// Couleurs par libellé exact stocké en base (MAP_GRAV dans import_csv.py)
 const GRAVITY_COLORS = {
     'Tué':                '#C53030',
     'Blessé hospitalisé': '#DD6B20',
@@ -87,11 +86,6 @@ export default function AgeGravityChart() {
                     <Tooltip content={<CustomTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 13 }} />
 
-                    {/*
-                      * dataKey = clé exacte retournée par l'API,
-                      * elle-même issue du libellé mappé en base.
-                      * Doit correspondre aux clés du dict dans stats_age_gravity().
-                    */}
                     <Bar dataKey="Tué"                fill={GRAVITY_COLORS['Tué']}                stackId="a" />
                     <Bar dataKey="Blessé hospitalisé" fill={GRAVITY_COLORS['Blessé hospitalisé']} stackId="a" />
                     <Bar dataKey="Blessé léger"       fill={GRAVITY_COLORS['Blessé léger']}       stackId="a" />
