@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,10 +20,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-$_4(6dj^gmgedyidz4$d)gh9tu^ts8lh=o$y*c+qd-irpr6(p*'
-
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'une-clé-de-secours-bidon')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = []
 
@@ -125,4 +124,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Le port par défaut de Vite.js (ton projet actuel)
     "http://localhost:3000", # Le port par défaut classique de React (au cas où)
     "http://127.0.0.1:5173", # Parfois le navigateur préfère l'IP au mot 'localhost'
+    
 ]
