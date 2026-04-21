@@ -19,7 +19,7 @@ export default function RoadTypeChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/stats/road-types/')
+        fetch('https://psid-accidents-routiers.onrender.comapi/stats/road-types/')
             .then(res => res.json())
             .then(rawData => {
                 // Conversion des codes catr en noms lisibles

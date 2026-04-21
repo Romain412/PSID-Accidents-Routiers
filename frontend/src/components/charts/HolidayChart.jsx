@@ -18,7 +18,7 @@ export default function HolidayChart() {
 
     useEffect(() => {
         // Appel à l'endpoint qui renvoie les 4 périodes (Hiver, Printemps, Été, Automne)
-        fetch('http://localhost:8000/api/stats/holiday-periods/')
+        fetch('https://psid-accidents-routiers.onrender.comapi/stats/holiday-periods/')
             .then(res => res.json())
             .then(setData)
             .catch(err => console.error("Erreur chargement périodes:", err));
