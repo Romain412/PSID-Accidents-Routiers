@@ -4,6 +4,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from .models import Accident, Vehicule, Lieu, Usager
 from django.forms.models import model_to_dict # 1. On importe cet outil magique
+from django.db.models import ExpressionWrapper, IntegerField, F
+from django.db.models.functions import Cast
 from django.views.decorators.cache import cache_page
 
 from django.db.models import Count
@@ -171,8 +173,6 @@ def stats_age_gravity(request):
     On utilise une annotation ORM (ExpressionWrapper + Cast) pour calculer
     l'âge côté base de données — pas de boucle Python sur des milliers de lignes.
     """
-    from django.db.models import ExpressionWrapper, IntegerField, F
-    from django.db.models.functions import Cast
 
     AGE_RANGES = ['0-17', '18-25', '26-40', '41-65', '65+']
     VALID_GRAV = {'Tué', 'Blessé hospitalisé', 'Blessé léger', 'Indemne'}
