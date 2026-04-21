@@ -9,10 +9,9 @@ urlpatterns = [
     path('accidents/locations/', views.get_all_locations),
 
     path('stats/sex-gravity/', views.stats_sex_gravity),
+    path('stats/age-gravity/', views.stats_age_gravity),
     
     path('stats/vehicle-types/', views.stats_vehicle_types),
-    path('stats/road-types/', views.stats_road_types),
     path('stats/holiday-periods/', views.stats_holiday_periods),
 
-    path('stats/age-gravity/', views.stats_age_gravity),
 ]

@@ -57,69 +57,93 @@ def get_all_locations(request):
 
 # Graphiques :
 
-def stats_rain_correlation(request):
-    data = (
-        Accident.objects
-        .values('atm')
-        .annotate(total=Count('Num_Acc'))
-        .order_by('-total')
-    )
-
-    return JsonResponse(list(data), safe=False)
-
 def stats_vehicle_types(request):
-    data = (
+    """
+    Regroupe les catégories de véhicules en 7 familles lisibles
+    et retourne pour chaque groupe : le total et la liste des types
+    inclus (pour l'affichage dans le tooltip côté React).
+    Les libellés en base correspondent exactement aux valeurs de
+    MAP_CATV dans import_csv.py.
+    """
+
+    GROUPS = {
+        'Voiture légère': {
+            'color': '#378ADD',
+            'members': ['VL seul', 'Voiturette'],
+        },
+        'Deux/trois-roues motorisés': {
+            'color': '#D85A30',
+            'members': [
+                'Cyclomoteur <50cm3',
+                'Scooter < 50 cm3',
+                'Motocyclette > 50 cm3 et <= 125 cm3',
+                'Scooter > 50 cm3 et <= 125 cm3',
+                'Motocyclette > 125 cm3',
+                'Scooter > 125 cm3',
+                '3RM <= 50 cm3',
+                '3RM 50 cm3 <= 125 cm3',
+                '3RM > 125 cm3',
+            ],
+        },
+        'Véhicule utilitaire léger': {
+            'color': '#0F6E56',
+            'members': ['VU seul 1,5T <= PTAC <= 3,5T'],
+        },
+        'Poids lourds': {
+            'color': '#1D9E75',
+            'members': [
+                'PL seul 3,5T <PTCA <= 7,5T',
+                'PL seul > 7,5T',
+                'PL > 3,5T + remorque',
+                'Tracteur routier seul',
+                'Tracteur routier + semi-remorque',
+            ],
+        },
+        'Mobilité douce': {
+            'color': '#BA7517',
+            'members': ['Bicyclette', 'VAE', 'EDP à moteur', 'EDP sans moteur'],
+        },
+        'Transports en commun': {
+            'color': '#7F77DD',
+            'members': ['Autobus', 'Autocar', 'Train', 'Tramway'],
+        },
+        'Engins spéciaux / autres': {
+            'color': '#888780',
+            'members': [
+                'Engin spécial',
+                'Tracteur agricole',
+                'Quad léger <= 50 cm3',
+                'Quad lourd > 50 cm3',
+                'Autre véhicule',
+                'Indéterminable',
+            ],
+        },
+    }
+
+    # Comptage ORM groupé par catv — une seule requête SQL
+    from django.db.models import Count
+    raw = (
         Vehicule.objects
         .values('catv')
         .annotate(total=Count('id_vehicule'))
-        .order_by('-total')
     )
+    # Index rapide : libellé → count
+    counts = {row['catv']: row['total'] for row in raw}
 
-    return JsonResponse(list(data), safe=False)
+    result = []
+    for group_name, meta in GROUPS.items():
+        total = sum(counts.get(m, 0) for m in meta['members'])
+        # On n'inclut que les membres réellement présents en base dans la liste du tooltip
+        present_members = [m for m in meta['members'] if counts.get(m, 0) > 0]
+        result.append({
+            'group':   group_name,
+            'total':   total,
+            'color':   meta['color'],
+            'members': present_members,
+        })
 
-def stats_age_distribution(request):
-    current_year = 2024
-
-    usagers = Usager.objects.exclude(an_nais__isnull=True).exclude(an_nais='')
-
-    buckets = {
-        "0-17": 0,
-        "18-25": 0,
-        "26-40": 0,
-        "41-65": 0,
-        "65+": 0
-    }
-
-    for u in usagers:
-        try:
-            age = current_year - int(u.an_nais)
-
-            if age <= 17:
-                buckets["0-17"] += 1
-            elif age <= 25:
-                buckets["18-25"] += 1
-            elif age <= 40:
-                buckets["26-40"] += 1
-            elif age <= 65:
-                buckets["41-65"] += 1
-            else:
-                buckets["65+"] += 1
-
-        except:
-            continue
-
-    data = [{"age_range": k, "total": v} for k, v in buckets.items()]
-    return JsonResponse(data, safe=False)
-
-def stats_road_types(request):
-    data = (
-        Lieu.objects
-        .values('catr')
-        .annotate(total=Count('Num_Acc'))
-        .order_by('-total')
-    )
-
-    return JsonResponse(list(data), safe=False)
+    result.sort(key=lambda x: x['total'], reverse=True)
+    return JsonResponse(result, safe=False)
 
 def stats_holiday_periods(request):
     buckets = {
@@ -149,20 +173,6 @@ def stats_holiday_periods(request):
 
     data = [{"periode": k, "total": v} for k,v in buckets.items()]
     return JsonResponse(data, safe=False)
-
-def stats_gravity_distribution(request):
-    """
-    Compte le nombre d'usagers par niveau de gravité.
-    Les valeurs en base sont déjà : 'Indemne', 'Tué',
-    'Blessé hospitalisé', 'Blessé léger'
-    """
-    data = (
-        Usager.objects
-        .values('grav')
-        .annotate(total=Count('id_usager'))
-        .order_by('grav')
-    )
-    return JsonResponse(list(data), safe=False)
 
 def stats_age_gravity(request):
     """
@@ -230,7 +240,6 @@ def stats_age_gravity(request):
             continue
 
     return JsonResponse(list(buckets.values()), safe=False)
-
 
 def stats_sex_gravity(request):
     """
