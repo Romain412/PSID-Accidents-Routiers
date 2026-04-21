@@ -119,6 +119,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Le port par défaut de Vite.js (ton projet actuel)

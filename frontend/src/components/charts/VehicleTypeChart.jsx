@@ -54,7 +54,7 @@ export default function VehicleTypeChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.comapi/stats/vehicle-types/')
+        fetch('https://psid-accidents-routiers.onrender.com/api/stats/vehicle-types/')
             .then(res => {
                 if (!res.ok) throw new Error("Erreur réseau");
                 return res.json();

@@ -57,7 +57,7 @@ export default function SexGravityChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.comapi/stats/sex-gravity/')
+        fetch('https://psid-accidents-routiers.onrender.com/api/stats/sex-gravity/')
             .then(res => {
                 if (!res.ok) throw new Error("Erreur réseau");
                 return res.json();

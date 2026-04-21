@@ -57,7 +57,7 @@ export default function AgeGravityChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.comapi/stats/age-gravity/')
+        fetch('https://psid-accidents-routiers.onrender.com/api/stats/age-gravity/')
             .then(res => {
                 if (!res.ok) throw new Error("Erreur réseau");
                 return res.json();

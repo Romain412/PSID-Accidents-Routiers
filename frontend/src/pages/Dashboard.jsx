@@ -116,7 +116,7 @@ export default function Dashboard() {
     const [loadingDetails, setLoadingDetails] = useState(false);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.comapi/accidents/locations/')
+        fetch('https://psid-accidents-routiers.onrender.com/api/accidents/locations/')
             .then(res => res.json())
             .then(data => setLocations(data))
             .catch(err => console.error("Erreur de chargement des points :", err));
@@ -124,7 +124,7 @@ export default function Dashboard() {
 
     const handlePointClick = (num_acc) => {
         setLoadingDetails(true);
-        fetch(`https://psid-accidents-routiers.onrender.comapi/accident/${num_acc}/`)
+        fetch(`https://psid-accidents-routiers.onrender.com/api/accident/${num_acc}/`)
             .then(res => res.json())
             .then(data => {
                 setSelectedAccident(data);
