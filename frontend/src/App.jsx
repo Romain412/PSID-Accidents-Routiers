@@ -10,11 +10,6 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
-
-        <Route path="/index.html" element={<Navigate to="/" replace />} />
-
-        {/* Optionnel : une page 404 pour toutes les autres routes inconnues */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
