@@ -119,11 +119,19 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.onrender.com',
+    'psid-accidents-routiers.onrender.com',
+    'psid-accidents-routiers-front.onrender.com',
+    
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Le port par défaut de Vite.js (ton projet actuel)
     "http://localhost:3000", # Le port par défaut classique de React (au cas où)
     "http://127.0.0.1:5173", # Parfois le navigateur préfère l'IP au mot 'localhost'
     "https://psid-accidents-routiers.onrender.com",
+    "https://psid-accidents-routiers-front.onrender.com",
 ]
