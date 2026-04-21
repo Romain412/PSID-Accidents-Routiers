@@ -1,5 +1,5 @@
 <div align="center">
- 
+
 ```
 █████╗  ██████╗ ██████╗██╗██████╗ ███████╗███╗   ██╗████████╗███████╗
 ██╔══██╗██╔════╝██╔════╝██║██╔══██╗██╔════╝████╗  ██║╚══██╔══╝██╔════╝
@@ -9,60 +9,81 @@
 ╚═╝  ╚═╝ ╚═════╝ ╚═════╝╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝
   R O U T I E R S
 ```
-  
-🚗 Accidents Routiers — Dashboard & Dataviz
-Projet SI et Données (PSID) — 2025/2026
+
+# 🚗 Accidents Routiers — Dashboard & Dataviz
+
+**Projet SI et Données (PSID) — 2025/2026**
 
 [![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.0.4-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Chakra UI](https://img.shields.io/badge/Chakra_UI-3.34.0-319795?style=flat-square&logo=chakraui&logoColor=white)](https://chakra-ui.com/)
+[![Recharts](https://img.shields.io/badge/Recharts-2-22B5BF?style=flat-square)](https://recharts.org/)
 [![Django](https://img.shields.io/badge/Django-5.1.4-092E20?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![DRF](https://img.shields.io/badge/DRF-3.15.2-A30000?style=flat-square&logo=django&logoColor=white)](https://www.django-rest-framework.org/)
 [![License](https://img.shields.io/badge/Licence-Open_Licence_2.0-blue?style=flat-square)](https://www.etalab.gouv.fr/wp-content/uploads/2014/05/Licence_Ouverte.pdf)
 
-Analyse et visualisation des accidents corporels de la circulation routière en France — données ONISR 2024
+*Analyse et visualisation des accidents corporels de la circulation routière en France — données ONISR 2024*
+
+🌐 **[Accéder à l'application](https://psid-accidents-routiers-front.onrender.com/)**
+
 </div>
+
+---
 
 ## 📖 À propos
 
-Ce projet est réalisé dans le cadre du cours Projet Systèmes d'Information et Données (PSID).
-Il s'appuie sur les données officielles du fichier BAAC (Bulletin d'Analyse des Accidents Corporels), publiées par le Ministère de l'Intérieur via data.gouv.fr, couvrant l'ensemble des accidents corporels survenus en France en 2024.
+Ce projet est réalisé dans le cadre du cours **Projet Systèmes d'Information et Données (PSID)**.
 
-L'objectif est de transformer ces données brutes en visualisations interactives pour répondre à trois grandes questions :
-*Qui est le plus à risque ? Quand et où les accidents sont-ils les plus graves ? Quelles conditions aggravent la mortalité ?*
+Il s'appuie sur les données officielles du fichier **BAAC (Bulletin d'Analyse des Accidents Corporels)**, publiées par le Ministère de l'Intérieur via [data.gouv.fr](https://www.data.gouv.fr/datasets/bases-de-donnees-annuelles-des-accidents-corporels-de-la-circulation-routiere-annees-de-2005-a-2024), couvrant l'ensemble des accidents corporels survenus en France en **2024**.
+
+L'objectif est de transformer ces données brutes en **visualisations interactives** pour répondre à trois grandes questions :
+
+> **Qui** est le plus à risque ? **Quand et où** les accidents sont-ils les plus graves ? **Quelles conditions** aggravent la mortalité ?
+
+---
 
 ## 🗂️ Structure du projet
- 
+
 ```
 PSID-Accidents-Routiers/
 │
-├── 📁 front/                        # Application web (React + Vite)
+├── 📁 frontend/                          # Application web (React + Vite)
 │   ├── public/
 │   └── src/
 │       ├── assets/
 │       ├── components/
 │       │   ├── Navbar.jsx
-│       │   ├── Footer.jsx
-│       │   └── charts/              # Composants graphiques
-│       │       ├── GravityDonut.jsx
-│       │       ├── AgeBarChart.jsx
-│       │       ├── HeatmapHeure.jsx
+│       │   └── charts/                   # Composants graphiques
+│       │       ├── AgeGravityChart.jsx
+│       │       ├── VehicleTypeChart.jsx
+│       │       ├── HolidayChart.jsx
 │       │       └── ...
 │       ├── pages/
-│       │   ├── Home.jsx             # Page d'accueil
-│       │   └── Dashboard.jsx        # Dashboard principal
-│       ├── data/                    # CSV parsés / JSON précalculés
+│       │   ├── Home.jsx                  # Page d'accueil
+│       │   └── Dashboard.jsx             # Dashboard principal
 │       ├── App.jsx
 │       └── main.jsx
 │
-├── 📁 back/                         # Backend (Partie 2 du projet)
+├── 📁 backend/                           # API Django REST
+│   ├── api/
+│   │   ├── models.py                     # Accident, Lieu, Vehicule, Usager
+│   │   ├── views.py                      # Endpoints statistiques
+│   │   ├── urls.py                       # Routage API
+│   │   └── management/commands/
+│   │       └── import_csv.py             # Import & mapping des CSV BAAC
+│   ├── core/
+│   │   └── urls.py
+│   ├── manage.py
+│   └── requirements.txt
 │
 └── README.md
 ```
 
+---
+
 ## 📊 Dataset
 
-Les données proviennent du fichier national BAAC — Année 2024, composé de 4 fichiers CSV reliés par `Num_Acc` :
+Les données proviennent du fichier national **BAAC — Année 2024**, composé de **4 fichiers CSV** reliés par `Num_Acc` :
 
 | Fichier | Contenu principal |
 | :--- | :--- |
@@ -71,33 +92,59 @@ Les données proviennent du fichier national BAAC — Année 2024, composé de 4
 | `vehicules_2024.csv` | Catégorie de véhicule, manœuvre, obstacle heurté |
 | `usagers_2024.csv` | Gravité, âge, sexe, type d'usager, trajet |
 
-*Source : data.gouv.fr — Ministère de l'Intérieur — Licence Ouverte 2.0*
+> Source : [data.gouv.fr — Ministère de l'Intérieur](https://www.data.gouv.fr/datasets/bases-de-donnees-annuelles-des-accidents-corporels-de-la-circulation-routiere-annees-de-2005-a-2024) — Licence Ouverte 2.0
 
-## 📈 Axes d'analyse
+Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'import via la commande `import_csv` (mapping complet des champs `grav`, `sexe`, `catv`, `catr`, `atm`, etc.).
 
-- **Axe 1 — Profil des victimes :** Gravité, pyramide des âges, répartition par sexe.
-- **Axe 2 — Temporalité & Géographie :** Évolution mensuelle, Heatmap horaire, cartographie par département.
-- **Axe 3 — Facteurs aggravants :** Luminosité, météo, type de route et infrastructures.
+---
+
+## 📈 Axes d'analyse & visualisations
+
+### Axe 1 — Profil des victimes
+- 📊 Accidents par **sexe et gravité** — disparités structurelles entre hommes et femmes
+- 📊 **Pyramide des âges** par gravité — fréquence vs létalité selon la tranche d'âge
+
+### Axe 2 — Temporalité & Géographie
+- 📅 **Accidents par saison** — saisonnalité et effet volume de trafic
+- 🗺️ **Carte interactive** des accidents avec clustering dynamique et détail au clic
+
+### Axe 3 — Facteurs structurels
+- 🚗 **Types de véhicules impliqués** — regroupés en 7 familles (voiture légère, deux/trois-roues motorisés, véhicule utilitaire léger, poids lourds, mobilité douce, transports en commun, engins spéciaux)
+
+---
 
 ## 🛠️ Stack technique
 
 | Couche | Technologie |
 | :--- | :--- |
-| **Frontend** | React 18, Vite, Chakra UI |
-| **Graphiques** | Recharts / D3.js |
-| **Backend** | Django 5, Django Rest Framework (DRF) |
-| **Base de données** | PostgreSQL (ou SQLite en dev) |
-| **Parsing Data** | Pandas (Python) / PapaParse (JS) |
+| **Framework JS** | [React 19.2.4](https://react.dev/) + [Vite 8.0.4](https://vitejs.dev/) |
+| **UI Components** | [Chakra UI 3.34.0](https://chakra-ui.com/) |
+| **Graphiques** | [Recharts 2](https://recharts.org/) |
+| **Carte** | [React Leaflet](https://react-leaflet.js.org/) + react-leaflet-cluster |
+| **Routing** | [React Router v6](https://reactrouter.com/) |
+| **Backend** | [Django 5.1.4](https://www.djangoproject.com/) + [DRF 3.15.2](https://www.django-rest-framework.org/) |
+| **Base de données** | PostgreSQL (prod) / SQLite (dev) |
+| **Import données** | Commande Django `import_csv` + mapping BAAC |
+| **Déploiement** | [Render](https://render.com/) |
+
+---
 
 ## 🚀 Installation & lancement
 
-1. Cloner le projet
+### Prérequis
+
+- [Node.js](https://nodejs.org/) ≥ 18 et npm ≥ 9
+- Python 3.12
+- Git
+
+### 1. Cloner le projet
+
 ```bash
-git clone [https://github.com/Romain412/PSID-Accidents-Routiers.git](https://github.com/Romain412/PSID-Accidents-Routiers.git)
+git clone https://github.com/Romain412/PSID-Accidents-Routiers.git
 cd PSID-Accidents-Routiers
 ```
 
-### Lancer le back-end
+### 2. Lancer le backend Django
 
 #### Windows
 
@@ -109,34 +156,34 @@ venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-python manage.py import_csv
 python manage.py migrate
+python manage.py import_csv
 python manage.py runserver
 ```
 
-#### MacOS :
+#### macOS / Linux
 
 ```bash
 cd backend
-
 python3.12 -m venv venv
 source venv/bin/activate
 
 pip install --upgrade pip
 pip install -r requirements.txt
 
-python manage.py import_csv
-python manage.py makemigrations
 python manage.py migrate
+python manage.py import_csv
 python manage.py runserver
 ```
 
-L'API sera disponible sur http://localhost:8000
+L'API sera disponible sur **http://localhost:8000**
 
-### Lancer le front-end
+> ⚠️ La commande `import_csv` charge les 4 fichiers CSV du BAAC et applique le mapping complet des codes — prévoir quelques minutes selon la machine.
+
+### 3. Lancer le frontend React
 
 ```bash
-cd front
+cd frontend
 npm install
 npm run dev
 ```
@@ -152,19 +199,24 @@ npm run preview
 
 ---
 
-## 📦 Livrables
+## 🌐 Déploiement
 
-- [ ] Rapport écrit
-- [ ] Vidéo de présentation
-- [ ] Slides PPTX
-- [ ] Archive du code front-end
-- [ ] 🔗 Lien vers la solution web déployée
+L'application est déployée sur **Render** :
+
+| Service | URL |
+| :--- | :--- |
+| Frontend | [psid-accidents-routiers-front.onrender.com](https://psid-accidents-routiers-front.onrender.com/) |
 
 ---
 
 ## 👥 Équipe
 
-> Projet réalisé dans le cadre du cours **PSID** — Année 2025/2026
+| | |
+| :--- | :--- |
+| **Kevin SOARES** | Développement & Data |
+| **Romain THOMAS** | Développement & Data |
+
+Projet réalisé dans le cadre du cours **PSID** — Année 2025/2026
 
 ---
 
