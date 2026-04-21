@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Container, Heading, Text, Flex, Box, SimpleGrid } from '@chakra-ui/react';
+import { Container, Heading, Text, Flex, Box, SimpleGrid, Icon } from '@chakra-ui/react';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import { LuChevronDown } from "react-icons/lu";
 import L from 'leaflet';
 
 import SexGravityChart from '../components/charts/SexGravityChart';
@@ -38,40 +39,69 @@ function StatCard({ title, children }) {
     const analysis = ANALYSES[title];
 
     return (
-        <Box bg="white" p={5} borderRadius="lg" boxShadow="md">
+        <Box 
+            bg="white" 
+            p={5} 
+            borderRadius="xl" 
+            boxShadow="md" 
+            border="1px solid" 
+            borderColor="gray.100"
+            transition="all 0.2s"
+            _hover={{ borderColor: "blue.200" }}
+        >
             <Flex
                 align="center"
                 justify="space-between"
                 cursor="pointer"
                 onClick={() => setOpen(o => !o)}
                 mb={4}
-                _hover={{ opacity: 0.75 }}
                 role="button"
                 aria-expanded={open}
+                userSelect="none"
             >
-                <Heading size="md">{title}</Heading>
+                <Heading size="md" color="gray.700">{title}</Heading>
+                
+                {/* La flèche agrandie et animée */}
                 <Box
-                    as="span"
-                    fontSize="18px"
-                    color="gray.400"
-                    style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
-                    ml={3}
-                    flexShrink={0}
+                    transition="transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    transform={open ? 'rotate(180deg)' : 'rotate(0deg)'}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
                 >
-                    ▾
+                    <Icon 
+                        as={LuChevronDown} 
+                        boxSize="7" // Taille de l'icône (28px environ)
+                        color={open ? "blue.500" : "gray.400"} 
+                    />
                 </Box>
             </Flex>
 
             {open && analysis && (
-                <Box mb={5} p={4} bg="blue.50" borderRadius="md" borderLeft="3px solid" borderColor="blue.300" fontSize="sm">
-                    <Text fontWeight="semibold" color="blue.700" mb={1}>Pourquoi ce graphique ?</Text>
-                    <Text color="gray.700" mb={3}>{analysis.pourquoi}</Text>
+                <Box 
+                    mb={5} 
+                    p={5} 
+                    bg="blue.50" 
+                    borderRadius="lg" 
+                    borderLeft="4px solid" 
+                    borderColor="blue.400" 
+                    fontSize="sm"
+                    animation="slide-down 0.2s ease-out" // Optionnel : petit effet d'apparition
+                >
+                    <Text fontWeight="bold" color="blue.800" mb={1} fontSize="xs" textTransform="uppercase" letterSpacing="wider">
+                        Pourquoi ce graphique ?
+                    </Text>
+                    <Text color="gray.700" mb={4} lineHeight="tall">{analysis.pourquoi}</Text>
 
-                    <Text fontWeight="semibold" color="blue.700" mb={1}>Ce que les données montrent</Text>
-                    <Text color="gray.700" mb={3}>{analysis.analyse}</Text>
+                    <Text fontWeight="bold" color="blue.800" mb={1} fontSize="xs" textTransform="uppercase" letterSpacing="wider">
+                        Ce que les données montrent
+                    </Text>
+                    <Text color="gray.700" mb={4} lineHeight="tall">{analysis.analyse}</Text>
 
-                    <Text fontWeight="semibold" color="blue.700" mb={1}>Nuance analytique</Text>
-                    <Text color="gray.700">{analysis.nuance}</Text>
+                    <Text fontWeight="bold" color="blue.800" mb={1} fontSize="xs" textTransform="uppercase" letterSpacing="wider">
+                        Nuance analytique
+                    </Text>
+                    <Text color="gray.700" lineHeight="tall" fontStyle="italic">{analysis.nuance}</Text>
                 </Box>
             )}
 
