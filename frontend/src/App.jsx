@@ -6,10 +6,15 @@ import Navbar from './components/Navbar' // On le commentera tant que tu n'as pa
 function App() {
   return (
     <BrowserRouter>
-      <Navbar/>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
+
+        {/* Optionnel : une page 404 pour toutes les autres routes inconnues */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )
