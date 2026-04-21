@@ -4,10 +4,10 @@ import {
   Flex,
   Text,
   IconButton,
-  Button,
   Container,
   HStack,
   VStack,
+  Spacer,
 } from '@chakra-ui/react'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { LuMenu, LuX, LuLayers } from "react-icons/lu"
@@ -18,7 +18,6 @@ export default function Navbar() {
 
   const toggleMenu = () => setIsOpen(!isOpen)
 
-  // Design des liens revu : Style "Pilule" très doux au survol et à l'état actif
   const NavLink = ({ children, to }) => {
     const isActive = location.pathname === to
     return (
@@ -48,7 +47,7 @@ export default function Navbar() {
       as="nav"
       position="sticky"
       top="0"
-      zIndex="100"
+      zIndex="10000"
       bg="rgba(255, 255, 255, 0.85)"
       backdropFilter="blur(16px)"
       borderBottom="1px solid"
@@ -59,7 +58,7 @@ export default function Navbar() {
       <Container maxW="container.xl">
         <Flex h="20" alignItems="center" justifyContent="space-between">
           
-          {/* LOGO : Ajout d'un léger zoom au survol et d'un dégradé sur l'icône */}
+          {/* LOGO */}
           <HStack as={RouterLink} to="/" gap="3" role="group">
             <Flex 
               w="10" h="10" 
@@ -86,44 +85,14 @@ export default function Navbar() {
             </Text>
           </HStack>
 
-          {/* DESKTOP NAV */}
+          <Spacer />
+          
           <HStack display={{ base: 'none', md: 'flex' }} gap="2">
             <NavLink to="/">Accueil</NavLink>
             <NavLink to="/dashboard">Dashboard</NavLink>
-            <NavLink to="/stats">Statistiques</NavLink>
           </HStack>
 
-          {/* ACTIONS (Boutons affinés) */}
           <HStack gap="4">
-            <Button 
-              display={{ base: 'none', md: 'inline-flex' }} 
-              variant="ghost" 
-              color="gray.600"
-              fontWeight="medium"
-              _hover={{ bg: 'gray.50', color: 'gray.900' }}
-              borderRadius="full"
-            >
-              Connexion
-            </Button>
-            <Button 
-              as={RouterLink} 
-              to="/signup" 
-              bg="blue.600" 
-              color="white" 
-              px="6" 
-              borderRadius="full"
-              fontWeight="bold"
-              _hover={{ 
-                bg: 'blue.700', 
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 14px 0 rgba(49, 130, 206, 0.39)' // Ombre colorée
-              }}
-              _active={{ transform: 'translateY(0)' }}
-              transition="all 0.2s"
-            >
-              Démarrer
-            </Button>
-            
             {/* BOUTON MENU MOBILE */}
             <IconButton
               display={{ base: 'flex', md: 'none' }}
@@ -140,7 +109,6 @@ export default function Navbar() {
           </HStack>
         </Flex>
 
-        {/* MOBILE MENU (Mieux espacé et interactif) */}
         {isOpen && (
           <VStack 
             display={{ md: 'none' }} 
@@ -153,8 +121,6 @@ export default function Navbar() {
           >
             <Text as={RouterLink} to="/" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Accueil</Text>
             <Text as={RouterLink} to="/dashboard" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Dashboard</Text>
-            <Text as={RouterLink} to="/stats" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Statistiques</Text>
-            <Button w="full" bg="gray.100" color="gray.800" borderRadius="xl" mt={4} size="lg" _hover={{ bg: 'gray.200' }}>Connexion</Button>
           </VStack>
         )}
       </Container>

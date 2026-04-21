@@ -5,19 +5,76 @@ import { Container, Heading, Text, Flex, Box, SimpleGrid } from '@chakra-ui/reac
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 
-/* FUTURS COMPOSANTS DE GRAPHIQUES */
-import RainCorrelationChart from '../components/charts/RainCorrelationChart';
-import VehicleTypeChart from '../components/charts/VehicleTypeChart';
-import AgeAccidentChart from '../components/charts/AgeAccidentChart';
-import RoadTypeChart from '../components/charts/RoadTypeChart';
+import SexGravityChart from '../components/charts/SexGravityChart';
+import AgeGravityChart from '../components/charts/AgeGravityChart';
 import HolidayChart from '../components/charts/HolidayChart';
-import HeatmapChart from '../components/charts/HeatmapChart';
+import VehicleTypeChart from '../components/charts/VehicleTypeChart';
 
+const ANALYSES = {
+    "Accidents par sexe et gravité": {
+        pourquoi: "Ce graphique croise le sexe et la gravité des blessures pour mettre en évidence des disparités structurelles dans l'exposition au risque routier. Il révèle immédiatement des inégalités de comportement et de vulnérabilité.",
+        analyse: "Les hommes représentent une part significativement plus élevée des usagers impliqués. Cette surreprésentation est encore plus marquée dans les catégories les plus graves : la proportion de tués et de blessés hospitalisés est structurellement plus élevée chez les hommes, même à volume total égal. Ce phénomène s'explique par un kilométrage annuel plus élevé, une pratique plus fréquente de la moto (véhicule à fort taux de létalité), et des comportements à risque statistiquement plus répandus.",
+        nuance: "Il serait erroné de conclure que les femmes sont de meilleures conductrices. Le différentiel s'explique en grande partie par l'exposition au risque : les hommes conduisent davantage et utilisent plus souvent les modes de transport les plus dangereux. Ce graphique invite à distinguer fréquence d'accident et gravité conditionnelle.",
+    },
+    "Répartition âge / gravité": {
+        pourquoi: "La pyramide des âges croisée avec la gravité permet d'identifier deux types de sur-risque distincts : le risque d'être impliqué dans un accident (fréquence) et le risque de mourir ou d'être gravement blessé une fois impliqué (létalité). Ces deux dimensions ne concernent pas les mêmes populations.",
+        analyse: "Les 18-25 ans sont la tranche la plus représentée en volume absolu, portés par l'inexpérience, une forte mobilité et des comportements à risque plus fréquents. À l'inverse, les 65 ans et plus présentent un profil de létalité élevée : bien que moins souvent impliqués, leur proportion de tués et blessés graves parmi les accidentés est significativement plus haute. La fragilité physiologique amplifie les conséquences d'un traumatisme à énergie équivalente.",
+        nuance: "Ce graphique illustre la distinction cruciale entre population exposée et population vulnérable — deux cibles différentes pour deux politiques publiques différentes : prévention comportementale pour les jeunes, adaptation de l'environnement routier pour les seniors.",
+    },
+    "Accidents par saisons": {
+        pourquoi: "La saisonnalité permet de tester une intuition commune — les conditions hivernales seraient plus dangereuses — et de la confronter aux données réelles. Ce graphique est analytiquement intéressant précisément parce que le résultat est souvent contre-intuitif.",
+        analyse: "Contrairement à l'idée reçue, l'été concentre généralement le plus grand nombre d'accidents corporels. Le trafic est significativement plus dense (départs en vacances, tourisme), l'usage de la moto et du vélo est à son maximum, et les longues journées augmentent l'exposition. L'hiver, malgré des conditions météorologiques plus hostiles, voit un volume moindre d'accidents car le trafic total est plus faible.",
+        nuance: "Ce graphique mesure le volume d'accidents, pas le risque par kilomètre parcouru. En normalisant par le trafic réel, l'hiver retrouverait une dangerosité relative plus élevée. L'été a plus d'accidents parce qu'il y a plus de voitures sur les routes, pas nécessairement parce que les conditions y sont intrinsèquement plus risquées.",
+    },
+    "Proportion des types de véhicules": {
+        pourquoi: "Identifier les catégories de véhicules les plus impliquées permet de cibler les politiques de prévention. Ce graphique révèle aussi la structure du parc automobile français et ses angles morts en matière de sécurité.",
+        analyse: "Les voitures légères dominent le volume d'accidents, reflet de leur prépondérance dans le parc roulant. Plus intéressante est la surreprésentation des deux et trois-roues motorisés : malgré une part de marché modeste, ils concentrent une fraction disproportionnée des accidents corporels. Ce déséquilibre est encore plus marqué sur la gravité — les motocyclistes ont un taux de létalité par accident plusieurs fois supérieur à celui des automobilistes, en raison de l'absence de carrosserie protectrice.",
+        nuance: "Ce graphique pose la question du rapport entre part modale et part accidentelle : un mode sur-représenté dans les accidents par rapport à son usage réel est structurellement plus dangereux. Les deux-roues motorisés et la mobilité douce sont dans cette situation, notamment dans un contexte d'essor des mobilités alternatives en milieu urbain.",
+    },
+};
 
 function StatCard({ title, children }) {
+    const [open, setOpen] = React.useState(false);
+    const analysis = ANALYSES[title];
+
     return (
         <Box bg="white" p={5} borderRadius="lg" boxShadow="md">
-            <Heading size="md" mb={4}>{title}</Heading>
+            <Flex
+                align="center"
+                justify="space-between"
+                cursor="pointer"
+                onClick={() => setOpen(o => !o)}
+                mb={4}
+                _hover={{ opacity: 0.75 }}
+                role="button"
+                aria-expanded={open}
+            >
+                <Heading size="md">{title}</Heading>
+                <Box
+                    as="span"
+                    fontSize="18px"
+                    color="gray.400"
+                    style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                    ml={3}
+                    flexShrink={0}
+                >
+                    ▾
+                </Box>
+            </Flex>
+
+            {open && analysis && (
+                <Box mb={5} p={4} bg="blue.50" borderRadius="md" borderLeft="3px solid" borderColor="blue.300" fontSize="sm">
+                    <Text fontWeight="semibold" color="blue.700" mb={1}>Pourquoi ce graphique ?</Text>
+                    <Text color="gray.700" mb={3}>{analysis.pourquoi}</Text>
+
+                    <Text fontWeight="semibold" color="blue.700" mb={1}>Ce que les données montrent</Text>
+                    <Text color="gray.700" mb={3}>{analysis.analyse}</Text>
+
+                    <Text fontWeight="semibold" color="blue.700" mb={1}>Nuance analytique</Text>
+                    <Text color="gray.700">{analysis.nuance}</Text>
+                </Box>
+            )}
+
             {children}
         </Box>
     );
@@ -28,7 +85,6 @@ export default function Dashboard() {
     const [selectedAccident, setSelectedAccident] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
 
-    // 1. Récupération des coordonnées au chargement
     useEffect(() => {
         fetch('http://localhost:8000/api/accidents/locations/')
             .then(res => res.json())
@@ -36,7 +92,6 @@ export default function Dashboard() {
             .catch(err => console.error("Erreur de chargement des points :", err));
     }, []);
 
-    // 2. Récupération des détails au clic
     const handlePointClick = (num_acc) => {
         setLoadingDetails(true);
         fetch(`http://localhost:8000/api/accident/${num_acc}/`)
@@ -51,26 +106,20 @@ export default function Dashboard() {
             });
     };
 
-    // Fonction magique pour créer des bulles de taille dynamique
     const createCustomClusterIcon = (cluster) => {
-        // On récupère le nombre d'accidents dans ce groupe
         const count = cluster.getChildCount();
-
-        // Calcul de la taille de la bulle (minimum 20px, puis grandit avec le nombre)
         const size = Math.max(20, 15 + (Math.log(count) * 8));
-
-        // On retourne un cercle dessiné en pur HTML/CSS
         return L.divIcon({
             html: `<div style="
-                background-color: rgba(229, 62, 62, 0.6); /* Rouge Chakra UI (e53e3e) avec transparence */
-                border: 2px solid #C53030; /* Bordure rouge plus foncé */
+                background-color: rgba(229, 62, 62, 0.6);
+                border: 2px solid #C53030;
                 border-radius: 50%;
                 width: 100%;
                 height: 100%;
                 transition: all 0.2s ease-in-out;
             "></div>`,
-            className: '', // Vide pour désactiver le CSS par défaut de MarkerCluster
-            iconSize: L.point(size, size, true), // Applique la taille calculée
+            className: '',
+            iconSize: L.point(size, size, true),
         });
     };
 
@@ -79,37 +128,30 @@ export default function Dashboard() {
             <Heading mb={2} fontWeight="bold">Tableau de bord des Accidents (2024)</Heading>
 
             <Heading mb={1} mt={6}>Carte des accidents</Heading>
+            <Text color="gray.600">Sélectionnez un point sur la carte pour voir les détails de l'accident.</Text>
+            <Text color="gray.400" mb={3} fontSize='xs'>(Le chargement des points peut prendre quelques secondes)</Text>
 
-            <Text color="gray.600" mb={3}>Sélectionnez un point sur la carte pour voir les détails de l'accident.</Text>
-
-            {/* Flex permet de mettre la carte et les détails côte à côte */}
             <Flex gap={6} h="70vh">
-
-                {/* --- SECTION GAUCHE : LA CARTE --- */}
                 <Box flex={2} borderRadius="lg" overflow="hidden" boxShadow="md">
                     <MapContainer center={[46.2276, 2.2137]} zoom={6} style={{ height: '100%', width: '100%' }} preferCanvas={true}>
                         <TileLayer
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         />
-                        <MarkerClusterGroup chunkedLoading={true} iconCreateFunction={createCustomClusterIcon} showCoverageOnHover={false} >
+                        <MarkerClusterGroup chunkedLoading={true} iconCreateFunction={createCustomClusterIcon} showCoverageOnHover={false}>
                             {locations.map(loc => (
                                 <CircleMarker
                                     key={loc.id}
                                     center={[loc.lat, loc.long]}
                                     radius={5}
                                     pathOptions={{ color: 'red', fillColor: '#e53e3e', fillOpacity: 0.8 }}
-                                    eventHandlers={{
-                                        click: () => handlePointClick(loc.id),
-                                    }}
+                                    eventHandlers={{ click: () => handlePointClick(loc.id) }}
                                 />
                             ))}
                         </MarkerClusterGroup>
                     </MapContainer>
                 </Box>
 
-                {/* --- SECTION DROITE : LES DÉTAILS --- */}
-                {/* --- SECTION DROITE : LES DÉTAILS --- */}
                 <Box flex={1} p={6} bg="gray.50" borderRadius="lg" boxShadow="md" overflowY="auto">
                     {loadingDetails && <Text>Chargement des données...</Text>}
 
@@ -118,10 +160,7 @@ export default function Dashboard() {
                             <Heading size="md" color="blue.600" mb={4}>
                                 Accident N° {selectedAccident.caracteristiques.Num_Acc}
                             </Heading>
-
-                            {/* Notre ligne de séparation sécurisée */}
                             <Box borderBottomWidth="1px" borderColor="gray.300" w="100%" mb={4} />
-
                             <Box mb={6}>
                                 <Text><strong>Date :</strong> {selectedAccident.caracteristiques.date_formatee}</Text>
                                 <Text><strong>Heure :</strong> {selectedAccident.caracteristiques.hrmn}</Text>
@@ -162,40 +201,26 @@ export default function Dashboard() {
                 </Box>
             </Flex>
 
-            <Box
-                borderBottomWidth="2px"
-                borderColor="gray.300"
-                my={5}
-                w="100%"
-            />
+            <Box borderBottomWidth="2px" borderColor="gray.300" my={5} w="100%" />
 
-            {/* ===================== GRAPHIQUES ===================== */}
-
-            <Heading mb={6}>Analyses statistiques</Heading>
+            <Heading mb={2}>Analyses statistiques</Heading>
+            <Text color="gray.500" fontSize="sm" mb={6}>Cliquez sur le titre d'un graphique pour afficher son analyse.</Text>
 
             <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={6}>
-                <StatCard title="Corrélation pluie / chaussée / type d'accident">
-                    <RainCorrelationChart />
+                <StatCard title="Accidents par sexe et gravité">
+                    <SexGravityChart />
+                </StatCard>
+
+                <StatCard title="Répartition âge / gravité">
+                    <AgeGravityChart />
+                </StatCard>
+
+                <StatCard title="Accidents par saisons">
+                    <HolidayChart />
                 </StatCard>
 
                 <StatCard title="Proportion des types de véhicules">
                     <VehicleTypeChart />
-                </StatCard>
-
-                <StatCard title="Répartition âge / accidents">
-                    <AgeAccidentChart />
-                </StatCard>
-
-                <StatCard title="Type de routes / accidents">
-                    <RoadTypeChart />
-                </StatCard>
-
-                <StatCard title="Vacances / accidents">
-                    <HolidayChart />
-                </StatCard>
-
-                <StatCard title="Zones accidentogènes / Heatmap">
-                    <HeatmapChart />
                 </StatCard>
             </SimpleGrid>
         </Container>
