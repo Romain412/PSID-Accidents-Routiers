@@ -124,5 +124,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", # Le port par défaut de Vite.js (ton projet actuel)
     "http://localhost:3000", # Le port par défaut classique de React (au cas où)
     "http://127.0.0.1:5173", # Parfois le navigateur préfère l'IP au mot 'localhost'
-    
+    "https://psid-accidents-routiers.onrender.com",
 ]
