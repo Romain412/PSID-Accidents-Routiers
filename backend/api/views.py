@@ -40,7 +40,7 @@ def get_all_locations(request):
     """
     # On récupère les accidents qui ont bien une latitude et une longitude
     accidents = Accident.objects.filter(lat__isnull=False, long__isnull=False)
-    accidents = accidents[:10] #pour l'instant on limite le nb d'accidents pour de meilleures performances
+    accidents = accidents[:100] #pour l'instant on limite le nb d'accidents pour de meilleures performances
     
     data = []
     for acc in accidents:
@@ -75,10 +75,8 @@ def stats_vehicle_types(request):
 
     return JsonResponse(list(data), safe=False)
 
-from datetime import datetime
-
 def stats_age_distribution(request):
-    current_year = datetime.now().year
+    current_year = 2024
 
     usagers = Usager.objects.exclude(an_nais__isnull=True).exclude(an_nais='')
 
@@ -150,19 +148,118 @@ def stats_holiday_periods(request):
     data = [{"periode": k, "total": v} for k,v in buckets.items()]
     return JsonResponse(data, safe=False)
 
-def stats_heatmap(request):
-    accidents = Accident.objects.filter(
-        lat__isnull=False,
-        long__isnull=False
-    )[:5000]
+def stats_gravity_distribution(request):
+    """
+    Compte le nombre d'usagers par niveau de gravité.
+    Les valeurs en base sont déjà : 'Indemne', 'Tué',
+    'Blessé hospitalisé', 'Blessé léger'
+    """
+    data = (
+        Usager.objects
+        .values('grav')
+        .annotate(total=Count('id_usager'))
+        .order_by('grav')
+    )
+    return JsonResponse(list(data), safe=False)
 
-    data = [
-        {
-            "lat": float(acc.lat),
-            "long": float(acc.long)
+def stats_age_gravity(request):
+    """
+    Pour chaque tranche d'âge, retourne le nombre d'usagers par niveau de gravité.
+    L'âge est calculé depuis l'année de l'accident (Num_Acc__an) et non
+    une constante, pour coller aux données réelles du dataset.
+
+    On utilise une annotation ORM (ExpressionWrapper + Cast) pour calculer
+    l'âge côté base de données — pas de boucle Python sur des milliers de lignes.
+    """
+    from django.db.models import ExpressionWrapper, IntegerField, F
+    from django.db.models.functions import Cast
+
+    AGE_RANGES = ['0-17', '18-25', '26-40', '41-65', '65+']
+    VALID_GRAV = {'Tué', 'Blessé hospitalisé', 'Blessé léger', 'Indemne'}
+
+    buckets = {
+        r: {
+            'age_range':          r,
+            'Tué':                0,
+            'Blessé hospitalisé': 0,
+            'Blessé léger':       0,
+            'Indemne':            0,
         }
-        for acc in accidents
-    ]
+        for r in AGE_RANGES
+    }
 
-    return JsonResponse(data, safe=False)
+    # Jointure Usager → Accident via Num_Acc pour récupérer l'année de l'accident,
+    # puis calcul de l'âge = an_accident - an_nais entièrement côté DB
+    rows = (
+        Usager.objects
+        .exclude(an_nais__isnull=True)
+        .exclude(an_nais='')
+        .exclude(grav__isnull=True)
+        .filter(grav__in=VALID_GRAV)
+        .annotate(
+            age=ExpressionWrapper(
+                Cast(F('Num_Acc__an'), IntegerField()) - Cast(F('an_nais'), IntegerField()),
+                output_field=IntegerField()
+            )
+        )
+        .values('age', 'grav')
+    )
 
+    for row in rows:
+        try:
+            age  = int(row['age'])
+            grav = row['grav']
+
+            if age < 0 or age > 120:   # filtre les années de naissance aberrantes
+                continue
+
+            if age <= 17:
+                bucket_key = '0-17'
+            elif age <= 25:
+                bucket_key = '18-25'
+            elif age <= 40:
+                bucket_key = '26-40'
+            elif age <= 65:
+                bucket_key = '41-65'
+            else:
+                bucket_key = '65+'
+
+            buckets[bucket_key][grav] += 1
+
+        except (ValueError, TypeError):
+            continue
+
+    return JsonResponse(list(buckets.values()), safe=False)
+
+
+def stats_sex_gravity(request):
+    """
+    Pour chaque sexe, retourne le nombre d'usagers par niveau de gravité.
+    Les valeurs en base sont déjà : 'Masculin', 'Féminin'
+    pour sexe, et les libellés texte pour grav.
+    """
+    VALID_SEXE = {'Masculin', 'Féminin'}
+    VALID_GRAV = {'Tué', 'Blessé hospitalisé', 'Blessé léger', 'Indemne'}
+
+    buckets = {
+        sexe: {
+            'sexe':               sexe,
+            'Tué':                0,
+            'Blessé hospitalisé': 0,
+            'Blessé léger':       0,
+            'Indemne':            0,
+        }
+        for sexe in VALID_SEXE
+    }
+
+    usagers = Usager.objects.exclude(sexe__isnull=True)
+
+    for u in usagers:
+        try:
+            if u.sexe not in VALID_SEXE or u.grav not in VALID_GRAV:
+                continue
+            buckets[u.sexe][u.grav] += 1
+        except (ValueError, TypeError):
+            continue
+
+    return JsonResponse(list(buckets.values()), safe=False)

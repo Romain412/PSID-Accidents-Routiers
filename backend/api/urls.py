@@ -8,11 +8,14 @@ urlpatterns = [
     path('accident/<int:num_acc>/', views.get_accident_details, name='accident_details'),
     path('accidents/locations/', views.get_all_locations),
 
-    path('stats/rain-correlation/', views.stats_rain_correlation),
+    path('stats/gravity-distribution/', views.stats_gravity_distribution),
+    path('stats/sex-gravity/', views.stats_sex_gravity),
+    
     path('stats/vehicle-types/', views.stats_vehicle_types),
-    path('stats/age-distribution/', views.stats_age_distribution),
     path('stats/road-types/', views.stats_road_types),
     path('stats/holiday-periods/', views.stats_holiday_periods),
-    path('stats/heatmap/', views.stats_heatmap),
+
+    path('stats/age-gravity/', views.stats_age_gravity),
+
 
 ]
