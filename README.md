@@ -13,10 +13,11 @@
 🚗 Accidents Routiers — Dashboard & Dataviz
 Projet SI et Données (PSID) — 2025/2026
 
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Chakra UI](https://img.shields.io/badge/Chakra_UI-3-319795?style=flat-square&logo=chakraui&logoColor=white)](https://chakra-ui.com/)
-[![Recharts](https://img.shields.io/badge/Recharts-2-22B5BF?style=flat-square)](https://recharts.org/)
+[![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.0.4-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Chakra UI](https://img.shields.io/badge/Chakra_UI-3.34.0-319795?style=flat-square&logo=chakraui&logoColor=white)](https://chakra-ui.com/)
+[![Django](https://img.shields.io/badge/Django-5.1.4-092E20?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![DRF](https://img.shields.io/badge/DRF-3.15.2-A30000?style=flat-square&logo=django&logoColor=white)](https://www.django-rest-framework.org/)
 [![License](https://img.shields.io/badge/Licence-Open_Licence_2.0-blue?style=flat-square)](https://www.etalab.gouv.fr/wp-content/uploads/2014/05/Licence_Ouverte.pdf)
 
 Analyse et visualisation des accidents corporels de la circulation routière en France — données ONISR 2024
@@ -127,6 +128,7 @@ pip install -r requirements.txt
 python manage.py import_csv
 python manage.py makemigrations
 python manage.py migrate
+python manage.py runserver
 ```
 
 L'API sera disponible sur http://localhost:8000
