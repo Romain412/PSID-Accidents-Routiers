@@ -9,6 +9,7 @@ import {
     CartesianGrid,
     Cell
 } from 'recharts';
+import { API_BASE } from '../../config';
 
 const COLORS = ['#3182CE', '#38A169', '#E53E3E', '#DD6B20']; 
 
@@ -16,7 +17,7 @@ export default function HolidayChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.com/api/stats/holiday-periods/')
+        fetch(`${API_BASE}/api/stats/holiday-periods/`)
             .then(res => res.json())
             .then(setData)
             .catch(err => console.error("Erreur chargement périodes:", err));

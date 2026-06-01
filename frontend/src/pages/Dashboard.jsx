@@ -5,6 +5,7 @@ import { Container, Heading, Text, Flex, Box, SimpleGrid, Icon } from '@chakra-u
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import { LuChevronDown } from "react-icons/lu";
 import L from 'leaflet';
+import { API_BASE } from '../config';
 
 import SexGravityChart from '../components/charts/SexGravityChart';
 import AgeGravityChart from '../components/charts/AgeGravityChart';
@@ -115,7 +116,7 @@ export default function Dashboard() {
     const [loadingDetails, setLoadingDetails] = useState(false);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.com/api/accidents/locations/')
+        fetch(`${API_BASE}/api/accidents/locations/`)
             .then(res => res.json())
             .then(data => setLocations(data))
             .catch(err => console.error("Erreur de chargement des points :", err));
@@ -123,7 +124,7 @@ export default function Dashboard() {
 
     const handlePointClick = (num_acc) => {
         setLoadingDetails(true);
-        fetch(`https://psid-accidents-routiers.onrender.com/api/accident/${num_acc}/`)
+        fetch(`${API_BASE}/api/accident/${num_acc}/`)
             .then(res => res.json())
             .then(data => {
                 setSelectedAccident(data);

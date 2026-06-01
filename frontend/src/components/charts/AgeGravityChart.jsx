@@ -3,6 +3,7 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     CartesianGrid, Legend
 } from 'recharts';
+import { API_BASE } from '../../config';
 
 const GRAVITY_COLORS = {
     'Tué':                '#C53030',
@@ -56,7 +57,7 @@ export default function AgeGravityChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.com/api/stats/age-gravity/')
+        fetch(`${API_BASE}/api/stats/age-gravity/`)
             .then(res => {
                 if (!res.ok) throw new Error("Erreur réseau");
                 return res.json();

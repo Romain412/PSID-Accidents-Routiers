@@ -1,8 +1,5 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.http import JsonResponse
-from .models import Accident, Vehicule, Lieu, Usager
+from .models import Accident, Vehicule, Usager
 from django.forms.models import model_to_dict # 1. On importe cet outil magique
 from django.db.models import ExpressionWrapper, IntegerField, F
 from django.db.models.functions import Cast
@@ -35,28 +32,22 @@ def get_accident_details(request, num_acc):
         # Sécurité : si le Num_Acc n'existe pas en base
         return JsonResponse({"erreur": "Cet accident n'existe pas dans la base de données."}, status=404)
 
-@cache_page(60 * 15)
+@cache_page(60 * 60 * 24)
 def get_all_locations(request):
     """
     Renvoie uniquement les coordonnées pour alléger le chargement de la carte.
     """
-    # On récupère les accidents qui ont bien une latitude et une longitude
-    accidents = Accident.objects.filter(lat__isnull=False, long__isnull=False)
-    accidents = accidents[:100] #pour l'instant on limite le nb d'accidents pour de meilleures performances
-    
-    data = []
-    for acc in accidents:
-        # On s'assure de convertir les Decimal en float pour le JSON
-        data.append({
-            "id": acc.Num_Acc,
-            "lat": float(acc.lat),
-            "long": float(acc.long)
-        })
-        
+    rows = (
+        Accident.objects
+        .filter(lat__isnull=False, long__isnull=False)
+        .values('Num_Acc', 'lat', 'long')[:100]
+    )
+    data = [{"id": r['Num_Acc'], "lat": float(r['lat']), "long": float(r['long'])} for r in rows]
     return JsonResponse(data, safe=False)
 
 # Graphiques :
 
+@cache_page(60 * 60 * 24)
 def stats_vehicle_types(request):
     """
     Regroupe les catégories de véhicules en 7 familles lisibles
@@ -121,7 +112,6 @@ def stats_vehicle_types(request):
     }
 
     # Comptage ORM groupé par catv — une seule requête SQL
-    from django.db.models import Count
     raw = (
         Vehicule.objects
         .values('catv')
@@ -145,35 +135,36 @@ def stats_vehicle_types(request):
     result.sort(key=lambda x: x['total'], reverse=True)
     return JsonResponse(result, safe=False)
 
+@cache_page(60 * 60 * 24)
 def stats_holiday_periods(request):
-    buckets = {
-        "Hiver": 0,
-        "Printemps": 0,
-        "Été": 0,
-        "Automne": 0
-    }
+    buckets = {"Hiver": 0, "Printemps": 0, "Été": 0, "Automne": 0}
 
-    accidents = Accident.objects.exclude(mois__isnull=True)
+    rows = (
+        Accident.objects
+        .exclude(mois__isnull=True)
+        .exclude(mois='')
+        .values('mois')
+        .annotate(total=Count('Num_Acc'))
+    )
 
-    for acc in accidents:
+    for row in rows:
         try:
-            mois = int(acc.mois)
-
-            if mois in [12,1,2]:
-                buckets["Hiver"] += 1
-            elif mois in [3,4,5]:
-                buckets["Printemps"] += 1
-            elif mois in [6,7,8]:
-                buckets["Été"] += 1
+            mois = int(row['mois'])
+            if mois in [12, 1, 2]:
+                buckets["Hiver"] += row['total']
+            elif mois in [3, 4, 5]:
+                buckets["Printemps"] += row['total']
+            elif mois in [6, 7, 8]:
+                buckets["Été"] += row['total']
             else:
-                buckets["Automne"] += 1
-
-        except:
+                buckets["Automne"] += row['total']
+        except (ValueError, TypeError):
             continue
 
-    data = [{"periode": k, "total": v} for k,v in buckets.items()]
+    data = [{"periode": k, "total": v} for k, v in buckets.items()]
     return JsonResponse(data, safe=False)
 
+@cache_page(60 * 60 * 24)
 def stats_age_gravity(request):
     """
     Pour chaque tranche d'âge, retourne le nombre d'usagers par niveau de gravité.
@@ -241,6 +232,7 @@ def stats_age_gravity(request):
 
     return JsonResponse(list(buckets.values()), safe=False)
 
+@cache_page(60 * 60 * 24)
 def stats_sex_gravity(request):
     """
     Pour chaque sexe, retourne le nombre d'usagers par niveau de gravité.
@@ -251,24 +243,18 @@ def stats_sex_gravity(request):
     VALID_GRAV = {'Tué', 'Blessé hospitalisé', 'Blessé léger', 'Indemne'}
 
     buckets = {
-        sexe: {
-            'sexe':               sexe,
-            'Tué':                0,
-            'Blessé hospitalisé': 0,
-            'Blessé léger':       0,
-            'Indemne':            0,
-        }
+        sexe: {'sexe': sexe, 'Tué': 0, 'Blessé hospitalisé': 0, 'Blessé léger': 0, 'Indemne': 0}
         for sexe in VALID_SEXE
     }
 
-    usagers = Usager.objects.exclude(sexe__isnull=True)
+    rows = (
+        Usager.objects
+        .filter(sexe__in=VALID_SEXE, grav__in=VALID_GRAV)
+        .values('sexe', 'grav')
+        .annotate(total=Count('id_usager'))
+    )
 
-    for u in usagers:
-        try:
-            if u.sexe not in VALID_SEXE or u.grav not in VALID_GRAV:
-                continue
-            buckets[u.sexe][u.grav] += 1
-        except (ValueError, TypeError):
-            continue
+    for row in rows:
+        buckets[row['sexe']][row['grav']] = row['total']
 
     return JsonResponse(list(buckets.values()), safe=False)

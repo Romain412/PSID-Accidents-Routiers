@@ -3,6 +3,7 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     CartesianGrid, Legend
 } from 'recharts';
+import { API_BASE } from '../../config';
 
 const GRAVITY_COLORS = {
     'Tué':                '#C53030',
@@ -56,7 +57,7 @@ export default function SexGravityChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.com/api/stats/sex-gravity/')
+        fetch(`${API_BASE}/api/stats/sex-gravity/`)
             .then(res => {
                 if (!res.ok) throw new Error("Erreur réseau");
                 return res.json();

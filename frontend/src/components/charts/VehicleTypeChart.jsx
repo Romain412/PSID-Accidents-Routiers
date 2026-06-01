@@ -3,6 +3,7 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     CartesianGrid, Cell
 } from 'recharts';
+import { API_BASE } from '../../config';
 
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -54,7 +55,7 @@ export default function VehicleTypeChart() {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        fetch('https://psid-accidents-routiers.onrender.com/api/stats/vehicle-types/')
+        fetch(`${API_BASE}/api/stats/vehicle-types/`)
             .then(res => {
                 if (!res.ok) throw new Error("Erreur réseau");
                 return res.json();

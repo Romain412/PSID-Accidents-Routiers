@@ -67,7 +67,8 @@ export default function Footer() {
                     </Text>
                     <Link
                         href="https://github.com/Romain412/PSID-Accidents-Routiers"
-                        isExternal
+                        target="_blank"
+                        rel="noopener noreferrer"
                         display="flex"
                         alignItems="center"
                         gap={2}
@@ -143,7 +144,8 @@ export default function Footer() {
                         <VStack align="flex-start" gap={0}>
                             <Link
                                 href="https://www.data.gouv.fr/datasets/bases-de-donnees-annuelles-des-accidents-corporels-de-la-circulation-routiere-annees-de-2005-a-2024"
-                                isExternal
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 fontSize="sm"
                                 color="gray.500"
                                 _hover={{ color: 'blue.700', textDecoration: 'underline' }}
@@ -205,7 +207,8 @@ export default function Footer() {
                     <HStack gap={4}>
                         <Link
                             href="https://psid-accidents-routiers-front.onrender.com/"
-                            isExternal
+                            target="_blank"
+                            rel="noopener noreferrer"
                             fontSize="xs"
                             color="gray.400"
                             _hover={{ color: 'gray.600' }}
@@ -214,7 +217,8 @@ export default function Footer() {
                         </Link>
                         <Link
                             href="https://github.com/Romain412/PSID-Accidents-Routiers"
-                            isExternal
+                            target="_blank"
+                            rel="noopener noreferrer"
                             fontSize="xs"
                             color="gray.500"
                             _hover={{ color: 'blue.600' }}
