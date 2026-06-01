@@ -9,7 +9,10 @@ from django.db.models import Count
 import json
 import os
 import requests
+import numpy as np
 from shapely.geometry import shape, LineString, Point
+from sklearn.cluster import KMeans, BisectingKMeans
+from sklearn.mixture import GaussianMixture
 
 _DEPTS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'departements.geojson')
 _DEPTS_URL = (
@@ -19,13 +22,8 @@ _DEPTS_URL = (
 
 def get_accident_details(request, num_acc):
     try:
-        # 1. On cherche l'accident principal grâce au Num_Acc
         accident = Accident.objects.get(Num_Acc=num_acc)
-        
-        # 2. On aspire TOUTES les colonnes de l'accident en une seule ligne
         caract_data = model_to_dict(accident)
-        
-        # 3. Petit bonus : on ajoute une vraie date formatée pour faciliter le travail de React plus tard
         caract_data['date_formatee'] = f"{accident.jour}/{accident.mois}/{accident.an}"
 
         data = {
@@ -34,12 +32,9 @@ def get_accident_details(request, num_acc):
             "vehicules": list(accident.vehicules.values()),
             "usagers": list(accident.usagers.values())
         }
-        
-        # 4. On renvoie le tout au format JSON
         return JsonResponse(data)
-        
+
     except Accident.DoesNotExist:
-        # Sécurité : si le Num_Acc n'existe pas en base
         return JsonResponse({"erreur": "Cet accident n'existe pas dans la base de données."}, status=404)
 
 @cache_page(60 * 60 * 24)
@@ -54,8 +49,6 @@ def get_all_locations(request):
     )
     data = [{"id": r['Num_Acc'], "lat": float(r['lat']), "long": float(r['long'])} for r in rows]
     return JsonResponse(data, safe=False)
-
-# Graphiques :
 
 @cache_page(60 * 60 * 24)
 def stats_vehicle_types(request):
@@ -127,13 +120,11 @@ def stats_vehicle_types(request):
         .values('catv')
         .annotate(total=Count('id_vehicule'))
     )
-    # Index rapide : libellé → count
     counts = {row['catv']: row['total'] for row in raw}
 
     result = []
     for group_name, meta in GROUPS.items():
         total = sum(counts.get(m, 0) for m in meta['members'])
-        # On n'inclut que les membres réellement présents en base dans la liste du tooltip
         present_members = [m for m in meta['members'] if counts.get(m, 0) > 0]
         result.append({
             'group':   group_name,
@@ -270,10 +261,7 @@ def stats_sex_gravity(request):
     return JsonResponse(list(buckets.values()), safe=False)
 
 
-# ── Itinéraire & intersection spatiale ────────────────────────────────────────
-
 def _load_departments():
-    """Télécharge le GeoJSON des départements si absent, puis le charge."""
     if not os.path.exists(_DEPTS_PATH):
         resp = requests.get(_DEPTS_URL, timeout=20)
         resp.raise_for_status()
@@ -283,14 +271,20 @@ def _load_departments():
         return json.load(f)
 
 
+_CLUSTERING_MODELS = {'kmeans', 'bisecting_kmeans', 'gmm'}
+_N_CLUSTERS        = 5
+
 def get_route_departments(request):
-    depart  = request.GET.get('depart',  '').strip()
-    arrivee = request.GET.get('arrivee', '').strip()
+    depart      = request.GET.get('depart',  '').strip()
+    arrivee     = request.GET.get('arrivee', '').strip()
+    model_name  = request.GET.get('model', 'kmeans')
 
     if not depart or not arrivee:
         return JsonResponse({'error': 'Les paramètres depart et arrivee sont requis.'}, status=400)
 
-    # ── 1. Géocodage via Nominatim ────────────────────────────────────────────
+    if model_name not in _CLUSTERING_MODELS:
+        return JsonResponse({'error': f'Modèle inconnu : {model_name}'}, status=400)
+
     def geocode(city):
         resp = requests.get(
             'https://nominatim.openstreetmap.org/search',
@@ -314,7 +308,6 @@ def get_route_departments(request):
     lon1, lat1, label_dep = geo_dep
     lon2, lat2, label_arr = geo_arr
 
-    # ── 2. Itinéraire OSRM ───────────────────────────────────────────────────
     try:
         osrm_resp = requests.get(
             f'http://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}'
@@ -334,7 +327,6 @@ def get_route_departments(request):
     dur_min    = round(route['duration'] / 60)
     route_line = LineString([(c[0], c[1]) for c in coords])
 
-    # ── 3. Chargement des départements ───────────────────────────────────────
     try:
         geojson = _load_departments()
     except Exception as e:
@@ -349,7 +341,6 @@ def get_route_departments(request):
         for feat in geojson['features']
     ]
 
-    # ── 4. Intersection spatiale + tri par ordre de passage ──────────────────
     dept_first_pos = {}
     for code, nom, geom in departments:
         if not geom.intersects(route_line):
@@ -366,11 +357,45 @@ def get_route_departments(request):
         for code, (_pos, nom) in sorted(dept_first_pos.items(), key=lambda x: x[1][0])
     ]
 
+    # ── Clustering des accidents dans les départements traversés ──────────────
+    dept_codes = [d['code'] for d in ordered]
+    acc_rows = (
+        Accident.objects
+        .filter(dep__in=dept_codes, lat__isnull=False, long__isnull=False)
+        .exclude(lat=0, long=0)
+        .values('lat', 'long')[:2000]
+    )
+    points = np.array([[float(a['lat']), float(a['long'])] for a in acc_rows])
+
+    clusters_list = []
+    if len(points) >= _N_CLUSTERS:
+        k = min(_N_CLUSTERS, len(points))
+        if model_name == 'kmeans':
+            labels = KMeans(n_clusters=k, random_state=42, n_init='auto').fit_predict(points)
+        elif model_name == 'bisecting_kmeans':
+            labels = BisectingKMeans(n_clusters=k, random_state=42).fit_predict(points)
+        else:
+            gm = GaussianMixture(n_components=k, random_state=42)
+            gm.fit(points)
+            labels = gm.predict(points)
+
+        cluster_map = {}
+        for point, label in zip(points, labels):
+            cluster_map.setdefault(int(label), []).append([float(point[0]), float(point[1])])
+
+        clusters_list = [
+            {'id': cid, 'count': len(pts), 'points': pts}
+            for cid, pts in sorted(cluster_map.items())
+        ]
+
     return JsonResponse({
-        'depart':       {'label': label_dep, 'lon': lon1, 'lat': lat1},
-        'arrivee':      {'label': label_arr, 'lon': lon2, 'lat': lat2},
-        'distance_km':  dist_km,
-        'duration_min': dur_min,
-        'departements': ordered,
-        'route':        coords,
+        'depart':           {'label': label_dep, 'lon': lon1, 'lat': lat1},
+        'arrivee':          {'label': label_arr, 'lon': lon2, 'lat': lat2},
+        'distance_km':      dist_km,
+        'duration_min':     dur_min,
+        'departements':     ordered,
+        'route':            coords,
+        'clusters':         clusters_list,
+        'total_accidents':  len(points),
+        'model':            model_name,
     })

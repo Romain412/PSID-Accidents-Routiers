@@ -10,9 +10,11 @@ django-cors-headers==4.9.0
 # ── Serveur de production ─────────────────────────────────────────────────────
 gunicorn==25.3.0
 
-# ── SIG / Routage ─────────────────────────────────────────────────────────────
+# ── SIG / Routage / Clustering ────────────────────────────────────────────────
 requests==2.32.3
 shapely==2.1.0
+scikit-learn==1.5.2
+matplotlib==3.9.2
 
 # ── Import données (commande import_csv) ─────────────────────────────────────
 pandas==2.2.2

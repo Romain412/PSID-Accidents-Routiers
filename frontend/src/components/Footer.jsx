@@ -20,8 +20,6 @@ const PersonIcon = () => (
     </svg>
 );
 
-// ── Composant principal ───────────────────────────────────────────────────────
-
 export default function Footer() {
     const currentYear = new Date().getFullYear();
 
@@ -37,7 +35,6 @@ export default function Footer() {
             borderTop="3px solid"
             borderColor="blue.500"
         >
-            {/* ── Grille principale ── */}
             <Flex
                 direction={{ base: 'column', md: 'row' }}
                 justify="space-between"
@@ -48,7 +45,6 @@ export default function Footer() {
                 mb={8}
             >
 
-                {/* Colonne 1 — Identité projet */}
                 <VStack align="flex-start" gap={3} flex={1}>
                     <HStack gap={2}>
                         <Box color="blue.600" fontSize="20px">🚗</Box>
@@ -95,7 +91,6 @@ export default function Footer() {
                     </Link>
                 </VStack>
 
-                {/* Colonne 2 — Équipe */}
                 <VStack align="flex-start" gap={3} flex={1}>
                     <Text
                         fontSize="xs"
@@ -126,7 +121,6 @@ export default function Footer() {
                     ))}
                 </VStack>
 
-                {/* Colonne 3 — Dataset & liens */}
                 <VStack align="flex-start" gap={3} flex={1}>
                     <Text
                         fontSize="xs"
@@ -190,11 +184,9 @@ export default function Footer() {
 
             </Flex>
 
-            {/* ── Séparateur ── */}
             <Box maxW="1200px" mx="auto">
                 <Separator borderColor="gray.200" mb={5} />
 
-                {/* ── Barre de bas de page ── */}
                 <Flex
                     direction={{ base: 'column', sm: 'row' }}
                     justify="space-between"

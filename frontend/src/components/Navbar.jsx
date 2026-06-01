@@ -58,7 +58,6 @@ export default function Navbar() {
       <Container maxW="container.xl">
         <Flex h="20" alignItems="center" justifyContent="space-between">
           
-          {/* LOGO */}
           <HStack as={RouterLink} to="/" gap="3" role="group">
             <Flex 
               w="10" h="10" 
@@ -94,7 +93,6 @@ export default function Navbar() {
           </HStack>
 
           <HStack gap="4">
-            {/* BOUTON MENU MOBILE */}
             <IconButton
               display={{ base: 'flex', md: 'none' }}
               onClick={toggleMenu}

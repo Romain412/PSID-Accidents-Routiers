@@ -65,6 +65,31 @@ class Vehicule(models.Model):
     motor = models.CharField(max_length=255, null=True, blank=True)
     occutc = models.CharField(max_length=255, null=True, blank=True)
 
+class ClusterDepartement(models.Model):
+    MODEL_CHOICES = [
+        ('kmeans',     'K-Means'),
+        ('bisecting',  'Bisecting K-Means'),
+        ('gmm',        'Gaussian Mixture Model'),
+    ]
+
+    model_name     = models.CharField(max_length=20, choices=MODEL_CHOICES, db_index=True)
+    departement    = models.CharField(max_length=3, db_index=True)
+    cluster_number = models.IntegerField()
+
+    pct_indemne      = models.FloatField(default=0.0)
+    pct_blesse_leger = models.FloatField(default=0.0)
+    pct_blesse_grave = models.FloatField(default=0.0)
+    pct_tue          = models.FloatField(default=0.0)
+
+    recommandation = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('model_name', 'departement', 'cluster_number')
+
+    def __str__(self):
+        return f"{self.model_name} | dép. {self.departement} | cluster {self.cluster_number}"
+
+
 class Usager(models.Model):
     """
     Rubrique USAGERS impliqués
