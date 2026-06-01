@@ -1,11 +1,21 @@
 from django.http import JsonResponse
 from .models import Accident, Vehicule, Usager
-from django.forms.models import model_to_dict # 1. On importe cet outil magique
+from django.forms.models import model_to_dict
 from django.db.models import ExpressionWrapper, IntegerField, F
 from django.db.models.functions import Cast
 from django.views.decorators.cache import cache_page
-
 from django.db.models import Count
+
+import json
+import os
+import requests
+from shapely.geometry import shape, LineString, Point
+
+_DEPTS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'departements.geojson')
+_DEPTS_URL = (
+    'https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/'
+    'departements-version-simplifiee.geojson'
+)
 
 def get_accident_details(request, num_acc):
     try:
@@ -40,7 +50,7 @@ def get_all_locations(request):
     rows = (
         Accident.objects
         .filter(lat__isnull=False, long__isnull=False)
-        .values('Num_Acc', 'lat', 'long')[:100]
+        .values('Num_Acc', 'lat', 'long')[:1000]
     )
     data = [{"id": r['Num_Acc'], "lat": float(r['lat']), "long": float(r['long'])} for r in rows]
     return JsonResponse(data, safe=False)
@@ -258,3 +268,109 @@ def stats_sex_gravity(request):
         buckets[row['sexe']][row['grav']] = row['total']
 
     return JsonResponse(list(buckets.values()), safe=False)
+
+
+# ── Itinéraire & intersection spatiale ────────────────────────────────────────
+
+def _load_departments():
+    """Télécharge le GeoJSON des départements si absent, puis le charge."""
+    if not os.path.exists(_DEPTS_PATH):
+        resp = requests.get(_DEPTS_URL, timeout=20)
+        resp.raise_for_status()
+        with open(_DEPTS_PATH, 'w', encoding='utf-8') as f:
+            f.write(resp.text)
+    with open(_DEPTS_PATH, encoding='utf-8') as f:
+        return json.load(f)
+
+
+def get_route_departments(request):
+    depart  = request.GET.get('depart',  '').strip()
+    arrivee = request.GET.get('arrivee', '').strip()
+
+    if not depart or not arrivee:
+        return JsonResponse({'error': 'Les paramètres depart et arrivee sont requis.'}, status=400)
+
+    # ── 1. Géocodage via Nominatim ────────────────────────────────────────────
+    def geocode(city):
+        resp = requests.get(
+            'https://nominatim.openstreetmap.org/search',
+            params={'q': f'{city}, France', 'format': 'json', 'limit': 1, 'countrycodes': 'fr'},
+            headers={'User-Agent': 'PSID-AccidentsRoutiers/1.0'},
+            timeout=10,
+        )
+        data = resp.json()
+        if not data:
+            return None
+        return float(data[0]['lon']), float(data[0]['lat']), data[0].get('display_name', city)
+
+    geo_dep = geocode(depart)
+    geo_arr = geocode(arrivee)
+
+    if not geo_dep:
+        return JsonResponse({'error': f'Ville introuvable : {depart}'}, status=404)
+    if not geo_arr:
+        return JsonResponse({'error': f'Ville introuvable : {arrivee}'}, status=404)
+
+    lon1, lat1, label_dep = geo_dep
+    lon2, lat2, label_arr = geo_arr
+
+    # ── 2. Itinéraire OSRM ───────────────────────────────────────────────────
+    try:
+        osrm_resp = requests.get(
+            f'http://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}'
+            '?overview=full&geometries=geojson',
+            timeout=30,
+        )
+        osrm_data = osrm_resp.json()
+    except Exception as e:
+        return JsonResponse({'error': f'Erreur serveur de routage : {e}'}, status=502)
+
+    if osrm_data.get('code') != 'Ok' or not osrm_data.get('routes'):
+        return JsonResponse({'error': 'Impossible de calculer cet itinéraire.'}, status=500)
+
+    route      = osrm_data['routes'][0]
+    coords     = route['geometry']['coordinates']   # [[lon, lat], ...]
+    dist_km    = round(route['distance'] / 1000, 1)
+    dur_min    = round(route['duration'] / 60)
+    route_line = LineString([(c[0], c[1]) for c in coords])
+
+    # ── 3. Chargement des départements ───────────────────────────────────────
+    try:
+        geojson = _load_departments()
+    except Exception as e:
+        return JsonResponse({'error': f'Erreur chargement départements : {e}'}, status=500)
+
+    departments = [
+        (
+            feat['properties'].get('code', ''),
+            feat['properties'].get('nom',  ''),
+            shape(feat['geometry']),
+        )
+        for feat in geojson['features']
+    ]
+
+    # ── 4. Intersection spatiale + tri par ordre de passage ──────────────────
+    dept_first_pos = {}
+    for code, nom, geom in departments:
+        if not geom.intersects(route_line):
+            continue
+        for i, c in enumerate(coords):
+            if geom.intersects(Point(c[0], c[1])):
+                dept_first_pos[code] = (i, nom)
+                break
+        else:
+            dept_first_pos[code] = (len(coords), nom)
+
+    ordered = [
+        {'code': code, 'nom': nom}
+        for code, (_pos, nom) in sorted(dept_first_pos.items(), key=lambda x: x[1][0])
+    ]
+
+    return JsonResponse({
+        'depart':       {'label': label_dep, 'lon': lon1, 'lat': lat1},
+        'arrivee':      {'label': label_arr, 'lon': lon2, 'lat': lat2},
+        'distance_km':  dist_km,
+        'duration_min': dur_min,
+        'departements': ordered,
+        'route':        coords,
+    })

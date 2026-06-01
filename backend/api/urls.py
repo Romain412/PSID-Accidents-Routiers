@@ -11,4 +11,5 @@ urlpatterns = [
     path('stats/vehicle-types/', views.stats_vehicle_types),
     path('stats/holiday-periods/', views.stats_holiday_periods),
 
+    path('route/departments/', views.get_route_departments),
 ]

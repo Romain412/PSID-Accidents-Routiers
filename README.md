@@ -17,7 +17,7 @@
 [![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.0.4-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Chakra UI](https://img.shields.io/badge/Chakra_UI-3.34.0-319795?style=flat-square&logo=chakraui&logoColor=white)](https://chakra-ui.com/)
-[![Recharts](https://img.shields.io/badge/Recharts-2-22B5BF?style=flat-square)](https://recharts.org/)
+[![Recharts](https://img.shields.io/badge/Recharts-3.8.1-22B5BF?style=flat-square)](https://recharts.org/)
 [![Django](https://img.shields.io/badge/Django-5.1.4-092E20?style=flat-square&logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![DRF](https://img.shields.io/badge/DRF-3.15.2-A30000?style=flat-square&logo=django&logoColor=white)](https://www.django-rest-framework.org/)
 [![License](https://img.shields.io/badge/Licence-Open_Licence_2.0-blue?style=flat-square)](https://www.etalab.gouv.fr/wp-content/uploads/2014/05/Licence_Ouverte.pdf)
@@ -53,6 +53,7 @@ PSID-Accidents-Routiers/
 │       ├── assets/
 │       ├── components/
 │       │   ├── Navbar.jsx
+│       │   ├── Footer.jsx
 │       │   └── charts/                   # Composants graphiques
 │       │       ├── AgeGravityChart.jsx
 │       │       ├── VehicleTypeChart.jsx
@@ -119,11 +120,11 @@ Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'im
 | :--- | :--- |
 | **Framework JS** | [React 19.2.4](https://react.dev/) + [Vite 8.0.4](https://vitejs.dev/) |
 | **UI Components** | [Chakra UI 3.34.0](https://chakra-ui.com/) |
-| **Graphiques** | [Recharts 2](https://recharts.org/) |
+| **Graphiques** | [Recharts 3.8.1](https://recharts.org/) |
 | **Carte** | [React Leaflet](https://react-leaflet.js.org/) + react-leaflet-cluster |
-| **Routing** | [React Router v6](https://reactrouter.com/) |
+| **Routing** | [React Router v7](https://reactrouter.com/) |
 | **Backend** | [Django 5.1.4](https://www.djangoproject.com/) + [DRF 3.15.2](https://www.django-rest-framework.org/) |
-| **Base de données** | PostgreSQL (prod) / SQLite (dev) |
+| **Base de données** | SQLite |
 | **Import données** | Commande Django `import_csv` + mapping BAAC |
 | **Déploiement** | [Render](https://render.com/) |
 
@@ -134,7 +135,7 @@ Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'im
 ### Prérequis
 
 - [Node.js](https://nodejs.org/) ≥ 18 et npm ≥ 9
-- Python 3.12
+- Python ≥ 3.11
 - Git
 
 ### 1. Cloner le projet
@@ -165,7 +166,7 @@ python manage.py runserver
 
 ```bash
 cd backend
-python3.12 -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 
 pip install --upgrade pip
