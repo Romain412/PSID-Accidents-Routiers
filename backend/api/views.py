@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .models import Accident, Vehicule, Usager
+from .models import Accident, Vehicule, Usager, ClusterDepartement
 from django.forms.models import model_to_dict
 from django.db.models import ExpressionWrapper, IntegerField, F
 from django.db.models.functions import Cast
@@ -10,9 +10,23 @@ import json
 import os
 import requests
 import numpy as np
+import pandas as pd
 from shapely.geometry import shape, LineString, Point
-from sklearn.cluster import KMeans, BisectingKMeans
-from sklearn.mixture import GaussianMixture
+
+_LABELLED_CSV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'accidents_labelled.csv')
+_df_labelled = None  # chargé une seule fois au premier appel
+
+def _get_labelled_df():
+    global _df_labelled
+    if _df_labelled is None:
+        try:
+            _df_labelled = pd.read_csv(
+                _LABELLED_CSV_PATH,
+                usecols=['Num_Acc', 'dep', 'cluster_kmeans', 'cluster_bisecting', 'cluster_gmm'],
+            )
+        except FileNotFoundError:
+            _df_labelled = pd.DataFrame()
+    return _df_labelled
 
 _DEPTS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'departements.geojson')
 _DEPTS_URL = (
@@ -273,6 +287,8 @@ def _load_departments():
 
 _CLUSTERING_MODELS = {'kmeans', 'bisecting_kmeans', 'gmm'}
 _N_CLUSTERS        = 5
+# Mapping clé frontend → model_name stocké dans ClusterDepartement
+_CD_MODEL_MAP      = {'kmeans': 'kmeans', 'bisecting_kmeans': 'bisecting', 'gmm': 'gmm'}
 
 def get_route_departments(request):
     depart      = request.GET.get('depart',  '').strip()
@@ -357,36 +373,59 @@ def get_route_departments(request):
         for code, (_pos, nom) in sorted(dept_first_pos.items(), key=lambda x: x[1][0])
     ]
 
-    # ── Clustering des accidents dans les départements traversés ──────────────
-    dept_codes = [d['code'] for d in ordered]
-    acc_rows = (
+    # ── Points d'accidents avec rang de gravité pré-calculé ──────────────────
+    dept_codes   = [d['code'] for d in ordered]
+    col_map      = {'kmeans': 'cluster_kmeans', 'bisecting_kmeans': 'cluster_bisecting', 'gmm': 'cluster_gmm'}
+    cluster_col  = col_map[model_name]
+
+    df_lab = _get_labelled_df()
+    df_dep = df_lab[df_lab['dep'].isin(dept_codes)] if not df_lab.empty else df_lab
+    acc_to_cluster = dict(zip(df_dep['Num_Acc'], df_dep[cluster_col])) if not df_dep.empty else {}
+
+    # ── Profils de risque depuis ClusterDepartement ───────────────────────────
+    cd_model  = _CD_MODEL_MAP.get(model_name, 'kmeans')
+    profiles  = ClusterDepartement.objects.filter(
+        model_name=cd_model, departement__in=dept_codes
+    ).values('departement', 'cluster_number', 'pct_indemne', 'pct_blesse_leger', 'pct_blesse_grave', 'pct_tue')
+
+    risk_profiles = {}
+    for p in profiles:
+        entry = {
+            'cluster_number':   p['cluster_number'],
+            'pct_indemne':      p['pct_indemne'],
+            'pct_blesse_leger': p['pct_blesse_leger'],
+            'pct_blesse_grave': p['pct_blesse_grave'],
+            'pct_tue':          p['pct_tue'],
+            # Score de gravité pondéré : tués×3 + hosp.×2 + légers×1
+            'gravity_score':    round(
+                p['pct_tue'] * 3 + p['pct_blesse_grave'] * 2 + p['pct_blesse_leger'], 1
+            ),
+        }
+        risk_profiles.setdefault(p['departement'], []).append(entry)
+
+    for dep in risk_profiles:
+        risk_profiles[dep].sort(key=lambda x: x['gravity_score'])
+
+    # Rang de gravité par (département, cluster) : 0 = moins grave, 4 = plus grave
+    gravity_rank_map = {
+        dep: {c['cluster_number']: idx for idx, c in enumerate(clusters)}
+        for dep, clusters in risk_profiles.items()
+    }
+
+    # Accidents avec position + rang de gravité départemental
+    acc_qs = (
         Accident.objects
         .filter(dep__in=dept_codes, lat__isnull=False, long__isnull=False)
         .exclude(lat=0, long=0)
-        .values('lat', 'long')[:2000]
+        .values('Num_Acc', 'lat', 'long', 'dep')[:2000]
     )
-    points = np.array([[float(a['lat']), float(a['long'])] for a in acc_rows])
-
-    clusters_list = []
-    if len(points) >= _N_CLUSTERS:
-        k = min(_N_CLUSTERS, len(points))
-        if model_name == 'kmeans':
-            labels = KMeans(n_clusters=k, random_state=42, n_init='auto').fit_predict(points)
-        elif model_name == 'bisecting_kmeans':
-            labels = BisectingKMeans(n_clusters=k, random_state=42).fit_predict(points)
-        else:
-            gm = GaussianMixture(n_components=k, random_state=42)
-            gm.fit(points)
-            labels = gm.predict(points)
-
-        cluster_map = {}
-        for point, label in zip(points, labels):
-            cluster_map.setdefault(int(label), []).append([float(point[0]), float(point[1])])
-
-        clusters_list = [
-            {'id': cid, 'count': len(pts), 'points': pts}
-            for cid, pts in sorted(cluster_map.items())
-        ]
+    cluster_points = []
+    for acc in acc_qs:
+        cnum = acc_to_cluster.get(acc['Num_Acc'])
+        if cnum is None:
+            continue
+        rank = gravity_rank_map.get(acc['dep'], {}).get(int(cnum), 0)
+        cluster_points.append({'lat': float(acc['lat']), 'lon': float(acc['long']), 'rank': rank})
 
     return JsonResponse({
         'depart':           {'label': label_dep, 'lon': lon1, 'lat': lat1},
@@ -395,7 +434,8 @@ def get_route_departments(request):
         'duration_min':     dur_min,
         'departements':     ordered,
         'route':            coords,
-        'clusters':         clusters_list,
-        'total_accidents':  len(points),
+        'cluster_points':   cluster_points,
+        'total_accidents':  len(df_dep),
         'model':            model_name,
+        'risk_profiles':    risk_profiles,
     })

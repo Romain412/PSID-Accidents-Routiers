@@ -13,6 +13,10 @@ const CLUSTER_COLORS = [
     '#805AD5', '#DD6B20', '#2B6CB0', '#276749',
 ];
 
+// Couleurs de gravité croissante : vert → rouge (5 niveaux pour k=5)
+const GRAVITY_RANK_COLORS = ['#38A169', '#85BB65', '#D69E2E', '#DD6B20', '#E53E3E'];
+const GRAVITY_RANK_LABELS = ['Très faible', 'Faible', 'Modéré', 'Élevé', 'Critique'];
+
 const MODEL_LABELS = {
     kmeans:           'K-Means',
     bisecting_kmeans: 'Bisecting K-Means',
@@ -193,21 +197,19 @@ export default function Itineraire() {
                                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                                 />
                                 <FitBounds coords={result.route} />
-                                {result.clusters.map(cluster =>
-                                    cluster.points.map((pt, idx) => (
-                                        <CircleMarker
-                                            key={`c${cluster.id}-${idx}`}
-                                            center={[pt[0], pt[1]]}
-                                            radius={4}
-                                            pathOptions={{
-                                                color:       CLUSTER_COLORS[cluster.id % CLUSTER_COLORS.length],
-                                                fillColor:   CLUSTER_COLORS[cluster.id % CLUSTER_COLORS.length],
-                                                fillOpacity: 0.65,
-                                                weight:      0,
-                                            }}
-                                        />
-                                    ))
-                                )}
+                                {result.cluster_points?.map((pt, idx) => (
+                                    <CircleMarker
+                                        key={`cp-${idx}`}
+                                        center={[pt.lat, pt.lon]}
+                                        radius={4}
+                                        pathOptions={{
+                                            color:       GRAVITY_RANK_COLORS[pt.rank],
+                                            fillColor:   GRAVITY_RANK_COLORS[pt.rank],
+                                            fillOpacity: 0.7,
+                                            weight:      0,
+                                        }}
+                                    />
+                                ))}
                                 <Polyline
                                     positions={routeLatLngs}
                                     pathOptions={{ color: '#1A202C', weight: 4, opacity: 0.85 }}
@@ -226,53 +228,75 @@ export default function Itineraire() {
                         </Box>
 
                         <Box flex={1} bg="gray.50" borderRadius="lg" boxShadow="md" overflowY="auto" p={5}>
-                            <Text fontWeight="bold" color="gray.600" mb={3}
+                            <Text fontWeight="bold" color="gray.600" mb={4}
                                 fontSize="xs" textTransform="uppercase" letterSpacing="wider">
-                                Clusters — {MODEL_LABELS[result.model]}
+                                Profil de risque — {MODEL_LABELS[result.model]}
                             </Text>
-                            <VStack align="stretch" gap={2} mb={5}>
-                                {result.clusters.map(cluster => (
-                                    <Flex key={cluster.id} align="center" gap={3} p={3}
-                                        bg="white" borderRadius="md" boxShadow="sm"
-                                        border="1px solid" borderColor="gray.100">
-                                        <Box
-                                            w="14px" h="14px" borderRadius="full" flexShrink={0}
-                                            bg={CLUSTER_COLORS[cluster.id % CLUSTER_COLORS.length]}
-                                        />
-                                        <Box>
-                                            <Text fontWeight="semibold" fontSize="sm" color="gray.800">
-                                                Cluster {cluster.id + 1}
-                                            </Text>
-                                            <Text fontSize="xs" color="gray.400">
-                                                {cluster.count} accident{cluster.count > 1 ? 's' : ''}
-                                            </Text>
-                                        </Box>
-                                    </Flex>
-                                ))}
-                            </VStack>
 
-                            <Separator mb={4} />
+                            {result.departements.map((dept, deptIdx) => {
+                                const clusters = result.risk_profiles?.[dept.code] ?? [];
+                                return (
+                                    <Box key={dept.code} mb={4}>
+                                        <Flex align="center" gap={2} mb={2}>
+                                            <Badge colorPalette="blue" variant="solid"
+                                                minW="26px" textAlign="center">
+                                                {deptIdx + 1}
+                                            </Badge>
+                                            <Box>
+                                                <Text fontWeight="semibold" fontSize="sm" color="gray.800" lineHeight="short">
+                                                    {dept.nom}
+                                                </Text>
+                                                <Text fontSize="xs" color="gray.400">Dép. {dept.code}</Text>
+                                            </Box>
+                                        </Flex>
 
-                            <Text fontWeight="bold" color="gray.600" mb={3}
-                                fontSize="xs" textTransform="uppercase" letterSpacing="wider">
-                                Départements traversés
-                            </Text>
-                            <VStack align="stretch" gap={2}>
-                                {result.departements.map((dept, idx) => (
-                                    <Flex key={dept.code} align="center" gap={3} p={3}
-                                        bg="white" borderRadius="md" boxShadow="sm"
-                                        border="1px solid" borderColor="gray.100">
-                                        <Badge colorPalette="blue" variant="solid"
-                                            minW="28px" textAlign="center">
-                                            {idx + 1}
-                                        </Badge>
-                                        <Box>
-                                            <Text fontWeight="semibold" fontSize="sm" color="gray.800">{dept.nom}</Text>
-                                            <Text fontSize="xs" color="gray.400">Dép. {dept.code}</Text>
-                                        </Box>
-                                    </Flex>
-                                ))}
-                            </VStack>
+                                        {clusters.length === 0 ? (
+                                            <Text fontSize="xs" color="gray.400" pl={1}>Aucune donnée</Text>
+                                        ) : (
+                                            <VStack align="stretch" gap={1} pl={1}>
+                                                {clusters.map((cluster, rankIdx) => {
+                                                    const color = GRAVITY_RANK_COLORS[Math.min(rankIdx, GRAVITY_RANK_COLORS.length - 1)];
+                                                    const label = GRAVITY_RANK_LABELS[Math.min(rankIdx, GRAVITY_RANK_LABELS.length - 1)];
+                                                    return (
+                                                        <Box key={cluster.cluster_number}
+                                                            p={2} bg="white" borderRadius="md"
+                                                            border="1px solid" borderColor="gray.100"
+                                                            borderLeft="3px solid" style={{ borderLeftColor: color }}>
+                                                            <Flex align="center" justify="space-between" mb={1}>
+                                                                <Text fontSize="xs" fontWeight="semibold" color="gray.700">
+                                                                    Cluster {cluster.cluster_number + 1}
+                                                                </Text>
+                                                                <Text fontSize="xs" fontWeight="medium"
+                                                                    style={{ color }}>
+                                                                    {label}
+                                                                </Text>
+                                                            </Flex>
+                                                            <Flex gap={3} wrap="wrap">
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    Ind. <Text as="span" color="gray.700" fontWeight="medium">{cluster.pct_indemne.toFixed(1)}%</Text>
+                                                                </Text>
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    Lég. <Text as="span" color="gray.700" fontWeight="medium">{cluster.pct_blesse_leger.toFixed(1)}%</Text>
+                                                                </Text>
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    Hosp. <Text as="span" color="orange.600" fontWeight="medium">{cluster.pct_blesse_grave.toFixed(1)}%</Text>
+                                                                </Text>
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    Tués <Text as="span" color="red.600" fontWeight="medium">{cluster.pct_tue.toFixed(1)}%</Text>
+                                                                </Text>
+                                                            </Flex>
+                                                        </Box>
+                                                    );
+                                                })}
+                                            </VStack>
+                                        )}
+
+                                        {deptIdx < result.departements.length - 1 && (
+                                            <Separator mt={3} />
+                                        )}
+                                    </Box>
+                                );
+                            })}
                         </Box>
                     </Flex>
 
