@@ -4,7 +4,6 @@ from django.forms.models import model_to_dict
 from django.db.models import ExpressionWrapper, IntegerField, F
 from django.db.models.functions import Cast
 from django.views.decorators.cache import cache_page
-from concurrent.futures import ThreadPoolExecutor
 from django.db.models import Count
 
 import json
@@ -354,11 +353,8 @@ def get_route_departments(request):
         except Exception:
             return None
 
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        f_dep = ex.submit(geocode, depart)
-        f_arr = ex.submit(geocode, arrivee)
-        geo_dep = f_dep.result()
-        geo_arr = f_arr.result()
+    geo_dep = geocode(depart)
+    geo_arr = geocode(arrivee)
 
     if not geo_dep:
         return JsonResponse({'error': f'Ville introuvable : {depart}'}, status=404)
