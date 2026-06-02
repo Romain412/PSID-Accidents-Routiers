@@ -12,4 +12,5 @@ urlpatterns = [
     path('stats/holiday-periods/', views.stats_holiday_periods),
 
     path('route/departments/', views.get_route_departments),
+    path('status/', views.get_status),
 ]

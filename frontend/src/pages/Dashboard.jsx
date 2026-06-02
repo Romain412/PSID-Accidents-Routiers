@@ -105,7 +105,7 @@ function StatCard({ title, children }) {
                 </Box>
             )}
 
-            {children}
+            {open && children}
         </Box>
     );
 }

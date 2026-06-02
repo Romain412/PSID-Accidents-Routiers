@@ -34,6 +34,22 @@ _DEPTS_URL = (
     'departements-version-simplifiee.geojson'
 )
 
+def get_status(request):
+    try:
+        from django.db import connection
+        from django.db.migrations.executor import MigrationExecutor
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
+        pending = [str(m) for m, _ in plan]
+        return JsonResponse({
+            'accidents':           Accident.objects.count(),
+            'cluster_departement': ClusterDepartement.objects.count(),
+            'migrations_pending':  pending,
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 def get_accident_details(request, num_acc):
     try:
         accident = Accident.objects.get(Num_Acc=num_acc)
