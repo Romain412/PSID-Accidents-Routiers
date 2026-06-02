@@ -4,6 +4,7 @@ from django.forms.models import model_to_dict
 from django.db.models import ExpressionWrapper, IntegerField, F
 from django.db.models.functions import Cast
 from django.views.decorators.cache import cache_page
+from concurrent.futures import ThreadPoolExecutor
 from django.db.models import Count
 
 import json
@@ -326,6 +327,7 @@ _N_CLUSTERS        = 5
 # Mapping clé frontend → model_name stocké dans ClusterDepartement
 _CD_MODEL_MAP      = {'kmeans': 'kmeans', 'bisecting_kmeans': 'bisecting', 'gmm': 'gmm'}
 
+@cache_page(60 * 60 * 6)
 def get_route_departments(request):
     depart      = request.GET.get('depart',  '').strip()
     arrivee     = request.GET.get('arrivee', '').strip()
@@ -352,11 +354,11 @@ def get_route_departments(request):
         except Exception:
             return None
 
-    try:
-        geo_dep = geocode(depart)
-        geo_arr = geocode(arrivee)
-    except Exception as e:
-        return JsonResponse({'error': f'Erreur de géocodage : {e}'}, status=502)
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        f_dep = ex.submit(geocode, depart)
+        f_arr = ex.submit(geocode, arrivee)
+        geo_dep = f_dep.result()
+        geo_arr = f_arr.result()
 
     if not geo_dep:
         return JsonResponse({'error': f'Ville introuvable : {depart}'}, status=404)
