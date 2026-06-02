@@ -12,9 +12,12 @@ import requests
 import numpy as np
 import pandas as pd
 from shapely.geometry import shape, LineString, Point
+from shapely.strtree import STRtree
 
 _LABELLED_CSV_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'accidents_labelled.csv')
-_df_labelled = None  # chargé une seule fois au premier appel
+_df_labelled     = None   # chargé une seule fois au premier appel
+_departments     = None   # liste de (code, nom, geom) — mis en cache au démarrage
+_departments_idx = None   # STRtree sur les géométries des départements
 
 def _get_labelled_df():
     global _df_labelled
@@ -301,6 +304,23 @@ def _load_departments():
         return json.load(f)
 
 
+def _get_departments_indexed():
+    """Charge les départements une seule fois et construit un STRtree pour filtrage rapide."""
+    global _departments, _departments_idx
+    if _departments is None:
+        geojson = _load_departments()
+        _departments = [
+            (
+                feat['properties'].get('code', ''),
+                feat['properties'].get('nom',  ''),
+                shape(feat['geometry']),
+            )
+            for feat in geojson['features']
+        ]
+        _departments_idx = STRtree([geom for _, _, geom in _departments])
+    return _departments, _departments_idx
+
+
 _CLUSTERING_MODELS = {'kmeans', 'bisecting_kmeans', 'gmm'}
 _N_CLUSTERS        = 5
 # Mapping clé frontend → model_name stocké dans ClusterDepartement
@@ -366,27 +386,19 @@ def get_route_departments(request):
         dur_min    = round(route['duration'] / 60)
         route_line = LineString([(c[0], c[1]) for c in coords])
 
-        geojson = _load_departments()
+        departments, dept_tree = _get_departments_indexed()
 
-        departments = [
-            (
-                feat['properties'].get('code', ''),
-                feat['properties'].get('nom',  ''),
-                shape(feat['geometry']),
-            )
-            for feat in geojson['features']
-        ]
+        # STRtree : filtre d'abord les candidats par bounding-box, puis vérifie l'intersection réelle
+        candidate_idxs = dept_tree.query(route_line, predicate='intersects')
 
         dept_first_pos = {}
-        for code, nom, geom in departments:
-            if not geom.intersects(route_line):
-                continue
-            for i, c in enumerate(coords):
-                if geom.intersects(Point(c[0], c[1])):
-                    dept_first_pos[code] = (i, nom)
-                    break
-            else:
-                dept_first_pos[code] = (len(coords), nom)
+        for idx in candidate_idxs:
+            code, nom, geom = departments[idx]
+            first = next(
+                (i for i, c in enumerate(coords) if geom.contains(Point(c[0], c[1]))),
+                len(coords),
+            )
+            dept_first_pos[code] = (first, nom)
 
         ordered = [
             {'code': code, 'nom': nom}
