@@ -125,9 +125,9 @@ export default function Dashboard() {
     const handlePointClick = (num_acc) => {
         setLoadingDetails(true);
         fetch(`${API_BASE}/api/accident/${num_acc}/`)
-            .then(res => res.json())
+            .then(res => res.ok ? res.json() : null)
             .then(data => {
-                setSelectedAccident(data);
+                setSelectedAccident(data?.caracteristiques ? data : null);
                 setLoadingDetails(false);
             })
             .catch(err => {

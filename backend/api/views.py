@@ -302,19 +302,25 @@ def get_route_departments(request):
         return JsonResponse({'error': f'Modèle inconnu : {model_name}'}, status=400)
 
     def geocode(city):
-        resp = requests.get(
-            'https://nominatim.openstreetmap.org/search',
-            params={'q': f'{city}, France', 'format': 'json', 'limit': 1, 'countrycodes': 'fr'},
-            headers={'User-Agent': 'PSID-AccidentsRoutiers/1.0'},
-            timeout=10,
-        )
-        data = resp.json()
-        if not data:
+        try:
+            resp = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={'q': f'{city}, France', 'format': 'json', 'limit': 1, 'countrycodes': 'fr'},
+                headers={'User-Agent': 'PSID-AccidentsRoutiers/1.0'},
+                timeout=10,
+            )
+            data = resp.json()
+            if not data:
+                return None
+            return float(data[0]['lon']), float(data[0]['lat']), data[0].get('display_name', city)
+        except Exception:
             return None
-        return float(data[0]['lon']), float(data[0]['lat']), data[0].get('display_name', city)
 
-    geo_dep = geocode(depart)
-    geo_arr = geocode(arrivee)
+    try:
+        geo_dep = geocode(depart)
+        geo_arr = geocode(arrivee)
+    except Exception as e:
+        return JsonResponse({'error': f'Erreur de géocodage : {e}'}, status=502)
 
     if not geo_dep:
         return JsonResponse({'error': f'Ville introuvable : {depart}'}, status=404)
@@ -337,105 +343,101 @@ def get_route_departments(request):
     if osrm_data.get('code') != 'Ok' or not osrm_data.get('routes'):
         return JsonResponse({'error': 'Impossible de calculer cet itinéraire.'}, status=500)
 
-    route      = osrm_data['routes'][0]
-    coords     = route['geometry']['coordinates']   # [[lon, lat], ...]
-    dist_km    = round(route['distance'] / 1000, 1)
-    dur_min    = round(route['duration'] / 60)
-    route_line = LineString([(c[0], c[1]) for c in coords])
-
     try:
+        route      = osrm_data['routes'][0]
+        coords     = route['geometry']['coordinates']   # [[lon, lat], ...]
+        dist_km    = round(route['distance'] / 1000, 1)
+        dur_min    = round(route['duration'] / 60)
+        route_line = LineString([(c[0], c[1]) for c in coords])
+
         geojson = _load_departments()
-    except Exception as e:
-        return JsonResponse({'error': f'Erreur chargement départements : {e}'}, status=500)
 
-    departments = [
-        (
-            feat['properties'].get('code', ''),
-            feat['properties'].get('nom',  ''),
-            shape(feat['geometry']),
-        )
-        for feat in geojson['features']
-    ]
+        departments = [
+            (
+                feat['properties'].get('code', ''),
+                feat['properties'].get('nom',  ''),
+                shape(feat['geometry']),
+            )
+            for feat in geojson['features']
+        ]
 
-    dept_first_pos = {}
-    for code, nom, geom in departments:
-        if not geom.intersects(route_line):
-            continue
-        for i, c in enumerate(coords):
-            if geom.intersects(Point(c[0], c[1])):
-                dept_first_pos[code] = (i, nom)
-                break
-        else:
-            dept_first_pos[code] = (len(coords), nom)
+        dept_first_pos = {}
+        for code, nom, geom in departments:
+            if not geom.intersects(route_line):
+                continue
+            for i, c in enumerate(coords):
+                if geom.intersects(Point(c[0], c[1])):
+                    dept_first_pos[code] = (i, nom)
+                    break
+            else:
+                dept_first_pos[code] = (len(coords), nom)
 
-    ordered = [
-        {'code': code, 'nom': nom}
-        for code, (_pos, nom) in sorted(dept_first_pos.items(), key=lambda x: x[1][0])
-    ]
+        ordered = [
+            {'code': code, 'nom': nom}
+            for code, (_pos, nom) in sorted(dept_first_pos.items(), key=lambda x: x[1][0])
+        ]
 
-    # ── Points d'accidents avec rang de gravité pré-calculé ──────────────────
-    dept_codes   = [d['code'] for d in ordered]
-    col_map      = {'kmeans': 'cluster_kmeans', 'bisecting_kmeans': 'cluster_bisecting', 'gmm': 'cluster_gmm'}
-    cluster_col  = col_map[model_name]
+        dept_codes  = [d['code'] for d in ordered]
+        col_map     = {'kmeans': 'cluster_kmeans', 'bisecting_kmeans': 'cluster_bisecting', 'gmm': 'cluster_gmm'}
+        cluster_col = col_map[model_name]
 
-    df_lab = _get_labelled_df()
-    df_dep = df_lab[df_lab['dep'].isin(dept_codes)] if not df_lab.empty else df_lab
-    acc_to_cluster = dict(zip(df_dep['Num_Acc'], df_dep[cluster_col])) if not df_dep.empty else {}
+        df_lab = _get_labelled_df()
+        df_dep = df_lab[df_lab['dep'].isin(dept_codes)] if not df_lab.empty else df_lab
+        acc_to_cluster = dict(zip(df_dep['Num_Acc'], df_dep[cluster_col])) if not df_dep.empty else {}
 
-    # ── Profils de risque depuis ClusterDepartement ───────────────────────────
-    cd_model  = _CD_MODEL_MAP.get(model_name, 'kmeans')
-    profiles  = ClusterDepartement.objects.filter(
-        model_name=cd_model, departement__in=dept_codes
-    ).values('departement', 'cluster_number', 'pct_indemne', 'pct_blesse_leger', 'pct_blesse_grave', 'pct_tue')
+        cd_model = _CD_MODEL_MAP.get(model_name, 'kmeans')
+        profiles = ClusterDepartement.objects.filter(
+            model_name=cd_model, departement__in=dept_codes
+        ).values('departement', 'cluster_number', 'pct_indemne', 'pct_blesse_leger', 'pct_blesse_grave', 'pct_tue')
 
-    risk_profiles = {}
-    for p in profiles:
-        entry = {
-            'cluster_number':   p['cluster_number'],
-            'pct_indemne':      p['pct_indemne'],
-            'pct_blesse_leger': p['pct_blesse_leger'],
-            'pct_blesse_grave': p['pct_blesse_grave'],
-            'pct_tue':          p['pct_tue'],
-            # Score de gravité pondéré : tués×3 + hosp.×2 + légers×1
-            'gravity_score':    round(
-                p['pct_tue'] * 3 + p['pct_blesse_grave'] * 2 + p['pct_blesse_leger'], 1
-            ),
+        risk_profiles = {}
+        for p in profiles:
+            entry = {
+                'cluster_number':   p['cluster_number'],
+                'pct_indemne':      p['pct_indemne'],
+                'pct_blesse_leger': p['pct_blesse_leger'],
+                'pct_blesse_grave': p['pct_blesse_grave'],
+                'pct_tue':          p['pct_tue'],
+                'gravity_score':    round(
+                    p['pct_tue'] * 3 + p['pct_blesse_grave'] * 2 + p['pct_blesse_leger'], 1
+                ),
+            }
+            risk_profiles.setdefault(p['departement'], []).append(entry)
+
+        for dep in risk_profiles:
+            risk_profiles[dep].sort(key=lambda x: x['gravity_score'])
+
+        gravity_rank_map = {
+            dep: {c['cluster_number']: idx for idx, c in enumerate(clusters)}
+            for dep, clusters in risk_profiles.items()
         }
-        risk_profiles.setdefault(p['departement'], []).append(entry)
 
-    for dep in risk_profiles:
-        risk_profiles[dep].sort(key=lambda x: x['gravity_score'])
+        acc_qs = (
+            Accident.objects
+            .filter(dep__in=dept_codes, lat__isnull=False, long__isnull=False)
+            .exclude(lat=0, long=0)
+            .values('Num_Acc', 'lat', 'long', 'dep')[:2000]
+        )
+        cluster_points = []
+        for acc in acc_qs:
+            cnum = acc_to_cluster.get(acc['Num_Acc'])
+            if cnum is None:
+                continue
+            rank = gravity_rank_map.get(acc['dep'], {}).get(int(cnum), 0)
+            cluster_points.append({'lat': float(acc['lat']), 'lon': float(acc['long']), 'rank': rank})
 
-    # Rang de gravité par (département, cluster) : 0 = moins grave, 4 = plus grave
-    gravity_rank_map = {
-        dep: {c['cluster_number']: idx for idx, c in enumerate(clusters)}
-        for dep, clusters in risk_profiles.items()
-    }
+        return JsonResponse({
+            'depart':           {'label': label_dep, 'lon': lon1, 'lat': lat1},
+            'arrivee':          {'label': label_arr, 'lon': lon2, 'lat': lat2},
+            'distance_km':      dist_km,
+            'duration_min':     dur_min,
+            'departements':     ordered,
+            'route':            coords,
+            'cluster_points':   cluster_points,
+            'total_accidents':  len(df_dep),
+            'model':            model_name,
+            'risk_profiles':    risk_profiles,
+        })
 
-    # Accidents avec position + rang de gravité départemental
-    acc_qs = (
-        Accident.objects
-        .filter(dep__in=dept_codes, lat__isnull=False, long__isnull=False)
-        .exclude(lat=0, long=0)
-        .values('Num_Acc', 'lat', 'long', 'dep')[:2000]
-    )
-    cluster_points = []
-    for acc in acc_qs:
-        cnum = acc_to_cluster.get(acc['Num_Acc'])
-        if cnum is None:
-            continue
-        rank = gravity_rank_map.get(acc['dep'], {}).get(int(cnum), 0)
-        cluster_points.append({'lat': float(acc['lat']), 'lon': float(acc['long']), 'rank': rank})
-
-    return JsonResponse({
-        'depart':           {'label': label_dep, 'lon': lon1, 'lat': lat1},
-        'arrivee':          {'label': label_arr, 'lon': lon2, 'lat': lat2},
-        'distance_km':      dist_km,
-        'duration_min':     dur_min,
-        'departements':     ordered,
-        'route':            coords,
-        'cluster_points':   cluster_points,
-        'total_accidents':  len(df_dep),
-        'model':            model_name,
-        'risk_profiles':    risk_profiles,
-    })
+    except Exception as e:
+        return JsonResponse({'error': f'Erreur interne : {e}'}, status=500)
