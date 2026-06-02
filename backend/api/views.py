@@ -339,19 +339,36 @@ def get_route_departments(request):
         return JsonResponse({'error': f'Modèle inconnu : {model_name}'}, status=400)
 
     def geocode(city):
+        # Nominatim en priorité
         try:
             resp = requests.get(
                 'https://nominatim.openstreetmap.org/search',
                 params={'q': f'{city}, France', 'format': 'json', 'limit': 1, 'countrycodes': 'fr'},
                 headers={'User-Agent': 'PSID-AccidentsRoutiers/1.0'},
-                timeout=10,
+                timeout=8,
             )
             data = resp.json()
-            if not data:
-                return None
-            return float(data[0]['lon']), float(data[0]['lat']), data[0].get('display_name', city)
+            if data:
+                return float(data[0]['lon']), float(data[0]['lat']), data[0].get('display_name', city)
         except Exception:
-            return None
+            pass
+
+        # Fallback : API Adresse officielle (data.gouv.fr) — sans rate-limit
+        try:
+            resp = requests.get(
+                'https://api-adresse.data.gouv.fr/search/',
+                params={'q': city, 'limit': 1, 'type': 'municipality'},
+                timeout=10,
+            )
+            features = resp.json().get('features', [])
+            if features:
+                coords = features[0]['geometry']['coordinates']  # [lon, lat]
+                label  = features[0]['properties'].get('label', city)
+                return float(coords[0]), float(coords[1]), label
+        except Exception:
+            pass
+
+        return None
 
     geo_dep = geocode(depart)
     geo_arr = geocode(arrivee)
