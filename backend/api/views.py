@@ -327,7 +327,8 @@ _N_CLUSTERS        = 5
 _CD_MODEL_MAP      = {'kmeans': 'kmeans', 'bisecting_kmeans': 'bisecting', 'gmm': 'gmm'}
 
 # Seuils basés sur le score de gravité pondéré (pct_tue×5 + pct_grave×3 + pct_leger×2)
-_NIVEAU_SEUILS = [(130, 'élevé'), (100, 'modéré')]
+_NIVEAU_SEUILS      = [(210, 'élevé'), (186, 'modéré')]  # calibrés sur P66/P33 des pires clusters
+_SEUIL_MOYEN_FAIBLE = 130                               # ≈ P25 de la distribution nationale des scores moyens
 
 _CONSEIL_CONDITION = [
     ('Nuit sans éclairage', "Les accidents nocturnes sans éclairage sont parmi les plus mortels. Évitez de conduire de nuit sur ces tronçons ou réduisez significativement votre vitesse."),
@@ -352,12 +353,14 @@ def _generate_recommendation(ordered, risk_profiles):
         clusters = risk_profiles.get(dept['code'], [])
         if not clusters:
             continue
-        worst = clusters[-1]
+        worst     = clusters[-1]
+        avg_score = sum(c['gravity_score'] for c in clusters) / len(clusters)
         dept_data.append({
-            'nom':     dept['nom'],
-            'score':   worst['gravity_score'],
-            'pct_tue': worst['pct_tue'],
-            'profil':  worst.get('profil', ''),
+            'nom':       dept['nom'],
+            'score':     worst['gravity_score'],  # pire cluster — pour le niveau de la bannière
+            'avg_score': avg_score,               # moyenne — pour l'alerte et le comptage faible
+            'pct_tue':   worst['pct_tue'],
+            'profil':    worst.get('profil', ''),
         })
 
     if not dept_data:
@@ -370,7 +373,8 @@ def _generate_recommendation(ordered, risk_profiles):
             niveau = label
             break
 
-    top = sorted(dept_data, key=lambda x: x['score'], reverse=True)[:2]
+    # Alerte et faible utilisent avg_score → cohérents, pas de contradiction possible
+    top = sorted(dept_data, key=lambda x: x['avg_score'], reverse=True)[:2]
 
     alerte_parts = [d['nom'] for d in top if d['pct_tue'] > 0.5]
     alerte = (
@@ -381,18 +385,35 @@ def _generate_recommendation(ordered, risk_profiles):
 
     # Conseil contextuel basé sur la condition dominante du pire département
     profil_pire = top[0]['profil'] or ''
-    conseil = next(
+    conseil_condition = next(
         (texte for mot, texte in _CONSEIL_CONDITION if mot in profil_pire),
         "Adoptez une conduite prudente et anticipez les aléas tout au long du trajet."
     )
+    conseil = f"{_CONSEIL_NIVEAU[niveau]} {conseil_condition}"
 
-    phrase_intro = _CONSEIL_NIVEAU[niveau]
+    nb_safe = sum(1 for d in dept_data if d['avg_score'] < _SEUIL_MOYEN_FAIBLE)
+    nb_total = len(dept_data)
+    if nb_safe == nb_total:
+        bilan_positif = f"L'ensemble des {nb_total} départements traversés présente un profil de risque faible."
+    elif nb_safe > 0:
+        bilan_positif = f"{nb_safe} département{'s' if nb_safe > 1 else ''} sur {nb_total} présente{'nt' if nb_safe > 1 else ''} un profil de risque faible."
+    else:
+        bilan_positif = None
+
+    # Recommandation horaire si la condition dominante est nocturne
+    _MOTS_NUIT = ['Nuit sans éclairage', 'Nuit éclairée', 'Nuit non éclairée', 'Crépuscule']
+    if any(m in profil_pire for m in _MOTS_NUIT):
+        horaire = "Privilégiez un départ entre 7h et 19h pour éviter les tronçons à risque nocturne."
+    else:
+        horaire = None
 
     return {
         'niveau':              niveau,
         'alerte':              alerte,
+        'conseil':             conseil,
+        'bilan_positif':       bilan_positif,
+        'horaire':             horaire,
         'condition_dominante': profil_pire,
-        'conseil':             f"{phrase_intro} {conseil}",
     }
 
 

@@ -210,13 +210,23 @@ export default function Itineraire() {
                                     </Text>
                                 </Flex>
                                 {rec.conseil && (
-                                    <Text fontSize="sm" color="gray.700" mb={rec.condition_dominante ? 1 : 0}>
+                                    <Text fontSize="sm" color="gray.700" mb={2}>
                                         {rec.conseil}
                                     </Text>
                                 )}
+                                {rec.horaire && (
+                                    <Text fontSize="sm" color="gray.700" mb={2}>
+                                        🕐 {rec.horaire}
+                                    </Text>
+                                )}
+                                {rec.bilan_positif && (
+                                    <Text fontSize="sm" color="green.700" mb={rec.condition_dominante ? 2 : 0}>
+                                        ✓ {rec.bilan_positif}
+                                    </Text>
+                                )}
                                 {rec.condition_dominante && (
-                                    <Text fontSize="xs" color="gray.500">
-                                        Condition dominante à risque : <Text as="span" color="gray.700">{rec.condition_dominante}</Text>
+                                    <Text fontSize="xs" color="gray.400">
+                                        Condition dominante à risque : {rec.condition_dominante}
                                     </Text>
                                 )}
                             </Box>
