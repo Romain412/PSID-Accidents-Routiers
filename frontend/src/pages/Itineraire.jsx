@@ -42,7 +42,7 @@ function formatDuration(minutes) {
 export default function Itineraire() {
     const [depart,  setDepart]  = useState('');
     const [arrivee, setArrivee] = useState('');
-    const [model,   setModel]   = useState('kmeans');
+    const [model,   setModel]   = useState('bisecting_kmeans');
     const [loading, setLoading] = useState(false);
     const [error,   setError]   = useState(null);
     const [result,  setResult]  = useState(null);
@@ -126,8 +126,8 @@ export default function Itineraire() {
                                 cursor: 'pointer',
                             }}
                         >
-                            <option value="kmeans">K-Means</option>
                             <option value="bisecting_kmeans">Bisecting K-Means</option>
+                            <option value="kmeans">K-Means</option>
                             <option value="gmm">Gaussian Mixture Model</option>
                         </select>
                     </Box>
