@@ -326,6 +326,76 @@ _N_CLUSTERS        = 5
 # Mapping clé frontend → model_name stocké dans ClusterDepartement
 _CD_MODEL_MAP      = {'kmeans': 'kmeans', 'bisecting_kmeans': 'bisecting', 'gmm': 'gmm'}
 
+# Seuils basés sur le score de gravité pondéré (pct_tue×5 + pct_grave×3 + pct_leger×2)
+_NIVEAU_SEUILS = [(130, 'élevé'), (100, 'modéré')]
+
+_CONSEIL_CONDITION = [
+    ('Nuit sans éclairage', "Les accidents nocturnes sans éclairage sont parmi les plus mortels. Évitez de conduire de nuit sur ces tronçons ou réduisez significativement votre vitesse."),
+    ('Nuit éclairée',       "La conduite de nuit reste plus dangereuse même sur routes éclairées. Soyez attentif aux piétons et cycles."),
+    ('Autoroute',           "Sur les portions autoroutières à vitesse élevée, maintenez impérativement vos distances de sécurité et faites une pause toutes les 2 heures."),
+    ('Hors agglo',          "Les routes hors agglomération concentrent les accidents les plus graves. Respectez strictement les limitations et anticipez les croisements."),
+    ('Route dép.',          "Les routes départementales présentent de nombreux risques aux intersections et virages. Adaptez votre allure et ne dépassez pas sans visibilité suffisante."),
+    ('Route nat.',          "Les routes nationales à trafic mixte requièrent une vigilance constante, notamment lors des dépassements."),
+]
+
+_CONSEIL_NIVEAU = {
+    'faible':  "Ce trajet présente un faible niveau de risque d'accident grave.",
+    'modéré':  "Ce trajet traverse des zones à risque modéré : une vigilance accrue est recommandée.",
+    'élevé':   "Attention : ce trajet inclut des zones à risque élevé de blessures graves ou mortelles.",
+}
+
+
+def _generate_recommendation(ordered, risk_profiles):
+    """Génère une recommandation globale pour le trajet à partir des profils de risque."""
+    dept_data = []
+    for dept in ordered:
+        clusters = risk_profiles.get(dept['code'], [])
+        if not clusters:
+            continue
+        worst = clusters[-1]
+        dept_data.append({
+            'nom':     dept['nom'],
+            'score':   worst['gravity_score'],
+            'pct_tue': worst['pct_tue'],
+            'profil':  worst.get('profil', ''),
+        })
+
+    if not dept_data:
+        return None
+
+    max_score = max(d['score'] for d in dept_data)
+    niveau = 'faible'
+    for seuil, label in _NIVEAU_SEUILS:
+        if max_score >= seuil:
+            niveau = label
+            break
+
+    top = sorted(dept_data, key=lambda x: x['score'], reverse=True)[:2]
+
+    alerte_parts = [d['nom'] for d in top if d['pct_tue'] > 0.5]
+    alerte = (
+        f"Vigilance accrue en {' et '.join(alerte_parts)}."
+        if alerte_parts else
+        f"Département le plus exposé : {top[0]['nom']}."
+    )
+
+    # Conseil contextuel basé sur la condition dominante du pire département
+    profil_pire = top[0]['profil'] or ''
+    conseil = next(
+        (texte for mot, texte in _CONSEIL_CONDITION if mot in profil_pire),
+        "Adoptez une conduite prudente et anticipez les aléas tout au long du trajet."
+    )
+
+    phrase_intro = _CONSEIL_NIVEAU[niveau]
+
+    return {
+        'niveau':              niveau,
+        'alerte':              alerte,
+        'condition_dominante': profil_pire,
+        'conseil':             f"{phrase_intro} {conseil}",
+    }
+
+
 @cache_page(60 * 60 * 6)
 def get_route_departments(request):
     depart      = request.GET.get('depart',  '').strip()
@@ -451,6 +521,8 @@ def get_route_departments(request):
         for dep in risk_profiles:
             risk_profiles[dep].sort(key=lambda x: x['gravity_score'])
 
+        journey_rec = _generate_recommendation(ordered, risk_profiles)
+
         gravity_rank_map = {
             dep: {c['cluster_number']: idx for idx, c in enumerate(clusters)}
             for dep, clusters in risk_profiles.items()
@@ -471,16 +543,17 @@ def get_route_departments(request):
             cluster_points.append({'lat': float(acc['lat']), 'lon': float(acc['long']), 'rank': rank})
 
         return JsonResponse({
-            'depart':           {'label': label_dep, 'lon': lon1, 'lat': lat1},
-            'arrivee':          {'label': label_arr, 'lon': lon2, 'lat': lat2},
-            'distance_km':      dist_km,
-            'duration_min':     dur_min,
-            'departements':     ordered,
-            'route':            coords,
-            'cluster_points':   cluster_points,
-            'total_accidents':  len(df_dep),
-            'model':            model_name,
-            'risk_profiles':    risk_profiles,
+            'depart':                 {'label': label_dep, 'lon': lon1, 'lat': lat1},
+            'arrivee':                {'label': label_arr, 'lon': lon2, 'lat': lat2},
+            'distance_km':            dist_km,
+            'duration_min':           dur_min,
+            'departements':           ordered,
+            'route':                  coords,
+            'cluster_points':         cluster_points,
+            'total_accidents':        len(df_dep),
+            'model':                  model_name,
+            'risk_profiles':          risk_profiles,
+            'journey_recommendation': journey_rec,
         })
 
     except Exception as e:

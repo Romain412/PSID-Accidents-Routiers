@@ -184,6 +184,45 @@ export default function Itineraire() {
                         </Box>
                     </HStack>
 
+                    {result.journey_recommendation && (() => {
+                        const rec = result.journey_recommendation;
+                        const palette = {
+                            faible:  { bg: '#F0FFF4', border: '#38A169', badge: '#38A169', text: 'RISQUE FAIBLE' },
+                            modéré:  { bg: '#FFFBEB', border: '#D69E2E', badge: '#D69E2E', text: 'RISQUE MODÉRÉ' },
+                            élevé:   { bg: '#FFF5F5', border: '#E53E3E', badge: '#E53E3E', text: 'RISQUE ÉLEVÉ'  },
+                        };
+                        const p = palette[rec.niveau] ?? palette['modéré'];
+                        return (
+                            <Box mb={5} p={4}
+                                bg={p.bg}
+                                border="1px solid" borderColor={p.border}
+                                borderLeft="4px solid" borderRadius="xl"
+                                style={{ borderLeftColor: p.border }}>
+                                <Flex align="center" gap={3} mb={2}>
+                                    <Box
+                                        px={2} py="2px" borderRadius="md"
+                                        bg={p.badge} color="white"
+                                        fontSize="xs" fontWeight="bold" letterSpacing="wider">
+                                        {p.text}
+                                    </Box>
+                                    <Text fontSize="sm" color="gray.700" fontWeight="medium">
+                                        {rec.alerte}
+                                    </Text>
+                                </Flex>
+                                {rec.conseil && (
+                                    <Text fontSize="sm" color="gray.700" mb={rec.condition_dominante ? 1 : 0}>
+                                        {rec.conseil}
+                                    </Text>
+                                )}
+                                {rec.condition_dominante && (
+                                    <Text fontSize="xs" color="gray.500">
+                                        Condition dominante à risque : <Text as="span" color="gray.700">{rec.condition_dominante}</Text>
+                                    </Text>
+                                )}
+                            </Box>
+                        );
+                    })()}
+
                     <Flex gap={6} h="65vh">
                         <Box flex={2} borderRadius="lg" overflow="hidden" boxShadow="md">
                             <MapContainer
