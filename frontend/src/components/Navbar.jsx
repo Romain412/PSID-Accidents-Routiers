@@ -90,6 +90,7 @@ export default function Navbar() {
             <NavLink to="/">Accueil</NavLink>
             <NavLink to="/dashboard">Dashboard</NavLink>
             <NavLink to="/itineraire">Itinéraire</NavLink>
+            <NavLink to="/simulateur">Simulateur</NavLink>
           </HStack>
 
           <HStack gap="4">
@@ -121,6 +122,7 @@ export default function Navbar() {
             <Text as={RouterLink} to="/" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Accueil</Text>
             <Text as={RouterLink} to="/dashboard" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Dashboard</Text>
             <Text as={RouterLink} to="/itineraire" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Itinéraire</Text>
+            <Text as={RouterLink} to="/simulateur" onClick={toggleMenu} px="4" py="3" borderRadius="lg" _hover={{ bg: 'blue.50', color: 'blue.700' }} fontWeight="medium">Simulateur</Text>
           </VStack>
         )}
       </Container>

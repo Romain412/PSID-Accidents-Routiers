@@ -13,4 +13,6 @@ urlpatterns = [
 
     path('route/departments/', views.get_route_departments),
     path('status/', views.get_status),
+    path('departments/', views.get_departments_list),
+    path('simulator/', views.get_simulator_prediction),
 ]
