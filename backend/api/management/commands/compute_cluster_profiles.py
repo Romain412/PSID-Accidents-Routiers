@@ -99,19 +99,26 @@ class Command(BaseCommand):
             for k in sorted(df[cluster_col].dropna().unique()):
                 subset = df[df[cluster_col] == k]
 
+                LABELS = {
+                    'lum':  'Luminosité',
+                    'atm':  'Météo',
+                    'agg':  'Zone',
+                    'catr': 'Voie',
+                    'catv': 'Véhicule',
+                }
                 parts = []
 
                 for feat in ['lum', 'atm', 'agg', 'catr', 'catv']:
                     val = _mode(subset[feat])
                     short = _abbrev(val)
                     if short:
-                        parts.append(short)
+                        parts.append(f"{LABELS[feat]} : {short}")
 
                 # vma : médiane en excluant les valeurs aberrantes (-1, 0, >200)
                 vma_vals = pd.to_numeric(subset['vma'], errors='coerce')
                 vma_vals = vma_vals[(vma_vals > 0) & (vma_vals <= 200)]
                 if not vma_vals.empty:
-                    parts.append(f"{int(vma_vals.median())} km/h")
+                    parts.append(f"Vit. max. : {int(vma_vals.median())} km/h")
 
                 desc = ' · '.join(parts)
                 n = ClusterDepartement.objects.filter(
