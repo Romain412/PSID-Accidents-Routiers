@@ -285,6 +285,11 @@ export default function Itineraire() {
                                                                     Tués <Text as="span" color="red.600" fontWeight="medium">{cluster.pct_tue.toFixed(1)}%</Text>
                                                                 </Text>
                                                             </Flex>
+                                                            {cluster.profil && (
+                                                                <Text fontSize="xs" color="gray.400" mt={1} lineHeight="short">
+                                                                    {cluster.profil}
+                                                                </Text>
+                                                            )}
                                                         </Box>
                                                     );
                                                 })}

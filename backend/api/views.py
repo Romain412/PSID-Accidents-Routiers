@@ -431,7 +431,7 @@ def get_route_departments(request):
         cd_model = _CD_MODEL_MAP.get(model_name, 'kmeans')
         profiles = ClusterDepartement.objects.filter(
             model_name=cd_model, departement__in=dept_codes
-        ).values('departement', 'cluster_number', 'pct_indemne', 'pct_blesse_leger', 'pct_blesse_grave', 'pct_tue')
+        ).values('departement', 'cluster_number', 'pct_indemne', 'pct_blesse_leger', 'pct_blesse_grave', 'pct_tue', 'recommandation')
 
         risk_profiles = {}
         for p in profiles:
@@ -444,6 +444,7 @@ def get_route_departments(request):
                 'gravity_score':    round(
                     p['pct_tue'] * 3 + p['pct_blesse_grave'] * 2 + p['pct_blesse_leger'], 1
                 ),
+                'profil': p['recommandation'] or '',
             }
             risk_profiles.setdefault(p['departement'], []).append(entry)
 
