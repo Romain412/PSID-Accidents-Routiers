@@ -84,8 +84,14 @@ class Command(BaseCommand):
         ], remainder='drop')
 
         # ── 3. Modèle ──────────────────────────────────────────────────────────
-        self.stdout.write('\nEntraînement Random Forest calibré (cv=3)...')
-        rf  = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+        # max_depth=12 : limite les arbres à 4096 feuilles max — modèle ~50-70 Mo
+        self.stdout.write('\nEntraînement Random Forest calibré (cv=3, max_depth=12)...')
+        rf  = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=12,
+            random_state=42,
+            n_jobs=-1,
+        )
         cal = CalibratedClassifierCV(rf, method='sigmoid', cv=3)
 
         X_t = preprocesseur.fit_transform(X)
