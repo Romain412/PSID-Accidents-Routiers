@@ -10,7 +10,7 @@
   R O U T I E R S
 ```
 
-# 🚗 Accidents Routiers — Dashboard & Dataviz
+# 🚗 Accidents Routiers — Dashboard & Clustering
 
 **Projet SI et Données (PSID) — 2025/2026**
 
@@ -36,7 +36,7 @@ Ce projet est réalisé dans le cadre du cours **Projet Systèmes d'Information 
 
 Il s'appuie sur les données officielles du fichier **BAAC (Bulletin d'Analyse des Accidents Corporels)**, publiées par le Ministère de l'Intérieur via [data.gouv.fr](https://www.data.gouv.fr/datasets/bases-de-donnees-annuelles-des-accidents-corporels-de-la-circulation-routiere-annees-de-2005-a-2024), couvrant l'ensemble des accidents corporels survenus en France en **2024**.
 
-L'objectif est de transformer ces données brutes en **visualisations interactives** pour répondre à trois grandes questions :
+L'objectif est de transformer ces données brutes en **visualisations interactives** et en un **système de recommandation basé sur le clustering** pour répondre à trois grandes questions :
 
 > **Qui** est le plus à risque ? **Quand et où** les accidents sont-ils les plus graves ? **Quelles conditions** aggravent la mortalité ?
 
@@ -61,17 +61,27 @@ PSID-Accidents-Routiers/
 │       │       └── ...
 │       ├── pages/
 │       │   ├── Home.jsx                  # Page d'accueil
-│       │   └── Dashboard.jsx             # Dashboard principal
+│       │   ├── Dashboard.jsx             # Dashboard statistiques + carte
+│       │   ├── Itineraire.jsx            # Itinéraire, clustering & recommandation
+│       │   └── Simulateur.jsx            # Simulateur de risque par conditions
 │       ├── App.jsx
 │       └── main.jsx
 │
 ├── 📁 backend/                           # API Django REST
 │   ├── api/
-│   │   ├── models.py                     # Accident, Lieu, Vehicule, Usager
-│   │   ├── views.py                      # Endpoints statistiques
+│   │   ├── models.py                     # Accident, Lieu, Vehicule, Usager, ClusterDepartement
+│   │   ├── preprocessing.py              # Pipeline ColumnTransformer (OHE + StandardScaler)
+│   │   ├── views.py                      # Endpoints statistiques, itinéraire, simulateur
 │   │   ├── urls.py                       # Routage API
 │   │   └── management/commands/
-│   │       └── import_csv.py             # Import & mapping des CSV BAAC
+│   │       ├── import_csv.py             # Import & mapping des CSV BAAC
+│   │       ├── train_clustering.py       # Entraînement K-Means, Bisecting, GMM (k=5)
+│   │       ├── compute_risk_profiles.py  # Profils de gravité par cluster × département
+│   │       └── compute_cluster_profiles.py # Caractérisation des clusters (mode des features)
+│   ├── data/
+│   │   ├── accidents_labelled.csv        # Labels de cluster par accident (54 402 lignes)
+│   │   ├── departements.geojson          # Contours géographiques des départements
+│   │   └── models/                       # Modèles sérialisés (.pkl)
 │   ├── core/
 │   │   └── urls.py
 │   ├── manage.py
@@ -99,7 +109,7 @@ Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'im
 
 ---
 
-## 📈 Axes d'analyse & visualisations
+## 📈 Axes d'analyse & fonctionnalités
 
 ### Axe 1 — Profil des victimes
 - 📊 Accidents par **sexe et gravité** — disparités structurelles entre hommes et femmes
@@ -107,10 +117,15 @@ Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'im
 
 ### Axe 2 — Temporalité & Géographie
 - 📅 **Accidents par saison** — saisonnalité et effet volume de trafic
-- 🗺️ **Carte interactive** des accidents avec clustering dynamique et détail au clic
+- 🗺️ **Carte interactive** des accidents avec clustering et détail au clic
 
 ### Axe 3 — Facteurs structurels
-- 🚗 **Types de véhicules impliqués** — regroupés en 7 familles (voiture légère, deux/trois-roues motorisés, véhicule utilitaire léger, poids lourds, mobilité douce, transports en commun, engins spéciaux)
+- 🚗 **Types de véhicules impliqués** — regroupés en 7 familles
+
+### Axe 4 — Clustering & Recommandation (Machine Learning)
+- 🤖 **Pipeline de clustering** : K-Means, Bisecting K-Means et Gaussian Mixture Model (k=5) appliqués sur les conditions d'accident (luminosité, météo, zone, type de voie, vitesse, véhicule)
+- 🛣️ **Page Itinéraire** : calcul de trajet (OSRM), intersection spatiale avec les départements (Shapely), affichage des profils de risque par cluster et recommandation globale
+- 🧪 **Simulateur de risque** : estimation des probabilités de blessure (indemne / léger / grave / tué) par soft assignment (pondération inverse des distances / predict_proba GMM) selon les conditions choisies
 
 ---
 
@@ -125,12 +140,20 @@ Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'im
 | **Routing** | [React Router v7](https://reactrouter.com/) |
 | **Backend** | [Django 5.1.4](https://www.djangoproject.com/) + [DRF 3.15.2](https://www.django-rest-framework.org/) |
 | **Base de données** | SQLite |
+| **Machine Learning** | [scikit-learn 1.5.2](https://scikit-learn.org/) — K-Means, Bisecting K-Means, GMM |
+| **SIG / Routage** | [Shapely 2.1](https://shapely.readthedocs.io/) + OSRM + API Adresse (data.gouv.fr) |
 | **Import données** | Commande Django `import_csv` + mapping BAAC |
 | **Déploiement** | [Render](https://render.com/) |
 
 ---
 
-## 🚀 Installation & lancement
+## 🌐 Déploiement
+
+L'application est déployée sur **Render** : [psid-accidents-routiers-front.onrender.com](https://psid-accidents-routiers-front.onrender.com/)
+
+---
+
+## 🚀 Installation & lancement (local)
 
 ### Prérequis
 
@@ -159,6 +182,9 @@ pip install -r requirements.txt
 
 python manage.py migrate
 python manage.py import_csv
+python manage.py train_clustering
+python manage.py compute_risk_profiles
+python manage.py compute_cluster_profiles
 python manage.py runserver
 ```
 
@@ -174,12 +200,16 @@ pip install -r requirements.txt
 
 python manage.py migrate
 python manage.py import_csv
+python manage.py train_clustering
+python manage.py compute_risk_profiles
+python manage.py compute_cluster_profiles
 python manage.py runserver
 ```
 
 L'API sera disponible sur **http://localhost:8000**
 
-> ⚠️ La commande `import_csv` charge les 4 fichiers CSV du BAAC et applique le mapping complet des codes — prévoir quelques minutes selon la machine.
+> ⚠️ `import_csv` charge les 4 fichiers CSV BAAC — prévoir quelques minutes.  
+> ⚠️ `train_clustering` entraîne les 3 modèles ML sur 54 402 accidents — prévoir 1-2 minutes.
 
 ### 3. Lancer le frontend React
 
@@ -197,17 +227,6 @@ L'application sera disponible sur **http://localhost:5173**
 npm run build
 npm run preview
 ```
-
----
-
-## 🌐 Déploiement
-
-L'application est déployée sur **Render** :
-
-| Service | URL |
-| :--- | :--- |
-| Frontend | [psid-accidents-routiers-front.onrender.com](https://psid-accidents-routiers-front.onrender.com/) |
-| Backend | [psid-accidents-routiers.onrender.com](https://psid-accidents-routiers.onrender.com/) |
 
 ---
 
