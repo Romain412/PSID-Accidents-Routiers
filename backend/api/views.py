@@ -326,7 +326,7 @@ _N_CLUSTERS        = 5
 # Mapping clé frontend → model_name stocké dans ClusterDepartement
 _CD_MODEL_MAP      = {'kmeans': 'kmeans', 'bisecting_kmeans': 'bisecting', 'gmm': 'gmm'}
 
-@cache_page(60 * 60 * 6, key_prefix='v2')
+@cache_page(60 * 60 * 6)
 def get_route_departments(request):
     depart      = request.GET.get('depart',  '').strip()
     arrivee     = request.GET.get('arrivee', '').strip()
@@ -442,7 +442,7 @@ def get_route_departments(request):
                 'pct_blesse_grave': p['pct_blesse_grave'],
                 'pct_tue':          p['pct_tue'],
                 'gravity_score':    round(
-                    p['pct_tue'] * 3 + p['pct_blesse_grave'] * 2 + p['pct_blesse_leger'], 1
+                    p['pct_tue'] * 5 + p['pct_blesse_grave'] * 3 + p['pct_blesse_leger'], 1
                 ),
                 'profil': p['recommandation'] or '',
             }
