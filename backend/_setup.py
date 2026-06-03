@@ -61,6 +61,13 @@ if cd_count == 0:
 else:
     print(f'      → Profils déjà calculés ({cd_count} entrées), ignoré.')
 
+sim_model = os.path.join(BASE, 'data', 'models', 'simulator_model.pkl')
+if not os.path.exists(sim_model):
+    print('      → Entraînement du modèle simulateur (Random Forest, 2-5 min)...')
+    run('python manage.py train_simulator')
+else:
+    print('      → Modèle simulateur déjà entraîné, ignoré.')
+
 print()
 print('Serveur disponible sur http://localhost:8000')
 print('=' * 45)

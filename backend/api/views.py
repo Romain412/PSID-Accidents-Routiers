@@ -87,7 +87,7 @@ def get_all_locations(request):
     rows = (
         Accident.objects
         .filter(lat__isnull=False, long__isnull=False)
-        .values('Num_Acc', 'lat', 'long')[:1000]
+        .values('Num_Acc', 'lat', 'long')[:4000]
     )
     data = [{"id": r['Num_Acc'], "lat": float(r['lat']), "long": float(r['long'])} for r in rows]
     return JsonResponse(data, safe=False)
@@ -435,34 +435,24 @@ def get_departments_list(request):
     return JsonResponse(data, safe=False)
 
 
-_SIM_MODEL_FILE = {
-    'kmeans':          'kmeans.pkl',
-    'bisecting_kmeans':'bisecting_kmeans.pkl',
-    'gmm':             'gmm.pkl',
-}
-
-
 def get_simulator_prediction(request):
-    dep        = request.GET.get('dep',   '').strip()
-    lum        = request.GET.get('lum',   '').strip()
-    atm        = request.GET.get('atm',   '').strip()
-    agg        = request.GET.get('agg',   '').strip()
-    catr       = request.GET.get('catr',  '').strip()
-    catv       = request.GET.get('catv',  '').strip()
-    vma        = request.GET.get('vma',   '').strip()
-    model_name = request.GET.get('model', 'bisecting_kmeans')
+    dep  = request.GET.get('dep',  '').strip()
+    lum  = request.GET.get('lum',  '').strip()
+    atm  = request.GET.get('atm',  '').strip()
+    agg  = request.GET.get('agg',  '').strip()
+    catr = request.GET.get('catr', '').strip()
+    catv = request.GET.get('catv', '').strip()
+    vma  = request.GET.get('vma',  '').strip()
 
-    if not all([dep, lum, atm, agg, catr, catv, vma]):
+    if not all([dep, lum, atm, agg, catr, vma]):
         return JsonResponse({'error': 'Tous les paramètres sont requis.'}, status=400)
 
-    if model_name not in _SIM_MODEL_FILE:
-        return JsonResponse({'error': f'Modèle inconnu : {model_name}'}, status=400)
-
     try:
-        pre   = _load_sim_model('preprocesseur')
-        model = _load_sim_model(_SIM_MODEL_FILE[model_name].replace('.pkl', ''))
+        bundle = _load_sim_model('simulator_model')
+        pre    = bundle['preprocesseur']
+        model  = bundle['model']
     except Exception as e:
-        return JsonResponse({'error': f'Modèle non disponible : {e}'}, status=500)
+        return JsonResponse({'error': f'Modèle simulateur non disponible : {e}'}, status=500)
 
     try:
         vma_val = float(vma)
@@ -473,59 +463,30 @@ def get_simulator_prediction(request):
 
     X_new = pd.DataFrame([{
         'lum': lum, 'atm': atm, 'agg': agg,
-        'catr': catr, 'catv': catv, 'vma': vma_val,
+        'catr': catr, 'catv': catv or 'VL seul',
+        'dep': dep, 'vma': vma_val,
     }])
 
     try:
-        X_t = pre.transform(X_new)
-
-        if model_name == 'gmm':
-            # GMM : probabilités d'appartenance directes
-            weights = model.predict_proba(X_t)[0]
-        else:
-            # KMeans / Bisecting : pondération inverse des distances aux centroïdes
-            distances = model.transform(X_t)[0]
-            inv_dist  = 1.0 / (distances + 1e-10)
-            weights   = inv_dist / inv_dist.sum()
-
+        X_t    = pre.transform(X_new)
+        probas = model.predict_proba(X_t)[0]
     except Exception as e:
         return JsonResponse({'error': f'Erreur de prédiction : {e}'}, status=500)
 
-    cd_model  = _CD_MODEL_MAP.get(model_name, 'bisecting')
-    clusters  = ClusterDepartement.objects.filter(
-        model_name=cd_model, departement=dep
-    ).order_by('cluster_number')
+    GRAV_FIELD = {
+        'Indemne':            'pct_indemne',
+        'Blessé léger':       'pct_blesse_leger',
+        'Blessé hospitalisé': 'pct_blesse_grave',
+        'Tué':                'pct_tue',
+    }
+    result = {'pct_indemne': 0.0, 'pct_blesse_leger': 0.0, 'pct_blesse_grave': 0.0, 'pct_tue': 0.0}
+    for cls, p in zip(model.classes_, probas):
+        field = GRAV_FIELD.get(cls)
+        if field:
+            result[field] = round(float(p) * 100, 2)
 
-    if not clusters.exists():
-        return JsonResponse({'error': 'Données indisponibles pour ce département.'}, status=404)
-
-    pct_indemne = pct_blesse_leger = pct_blesse_grave = pct_tue = 0.0
-    contributions = []
-
-    for cd in clusters:
-        k = cd.cluster_number
-        w = float(weights[k]) if k < len(weights) else 0.0
-        pct_indemne      += w * cd.pct_indemne
-        pct_blesse_leger += w * cd.pct_blesse_leger
-        pct_blesse_grave += w * cd.pct_blesse_grave
-        pct_tue          += w * cd.pct_tue
-        if w >= 0.05:
-            contributions.append({
-                'cluster_number': k,
-                'poids':          round(w * 100, 1),
-                'profil':         cd.recommandation or '',
-            })
-
-    contributions.sort(key=lambda x: x['poids'], reverse=True)
-
-    return JsonResponse({
-        'pct_indemne':      round(pct_indemne,      2),
-        'pct_blesse_leger': round(pct_blesse_leger,  2),
-        'pct_blesse_grave': round(pct_blesse_grave,  2),
-        'pct_tue':          round(pct_tue,           2),
-        'contributions':    contributions,
-        'methode':          'predict_proba' if model_name == 'gmm' else 'inverse_distance',
-    })
+    result['methode'] = 'Random Forest calibré (CalibratedClassifierCV)'
+    return JsonResponse(result)
 
 
 @cache_page(60 * 60 * 6)

@@ -151,6 +151,8 @@ Les codes numériques bruts du BAAC sont convertis en libellés lisibles à l'im
 
 L'application est déployée sur **Render** : [psid-accidents-routiers-front.onrender.com](https://psid-accidents-routiers-front.onrender.com/)
 
+> ℹ️ L'hébergement utilisé est le **plan gratuit de Render**. Le serveur backend se met en veille après une période d'inactivité et les ressources sont limitées — les premiers chargements peuvent prendre quelques secondes supplémentaires.
+
 ---
 
 ## 🚀 Installation & lancement (local)

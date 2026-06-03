@@ -12,6 +12,7 @@ backend/media/
 *.sqlite3
 backend/db.sqlite3
 analyse_clustering/
+backend/data/models/simulator_model.pkl
 
 # ========================
 # FRONTEND (Vite, React, Node)
@@ -47,4 +48,3 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?

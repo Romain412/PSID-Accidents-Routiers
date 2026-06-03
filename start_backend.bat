@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 :: Lance le backend Django (Windows).
 :: Les etapes longues sont ignorees si deja effectuees.
 
@@ -15,8 +16,8 @@ echo [1/5] Virtualenv actif.
 
 :: Dependances
 echo [2/5] Installation des dependances...
-pip install --upgrade pip -q
-pip install -r requirements.txt -q
+python -m pip install --upgrade pip -q
+python -m pip install -r requirements.txt
 
 :: Setup + lancement
 python _setup.py

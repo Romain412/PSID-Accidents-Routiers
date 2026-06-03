@@ -36,11 +36,6 @@ const LUM_OPTIONS = ['Plein jour', 'Crépuscule ou aube', 'Nuit avec éclairage 
 const LUM_ABBREV  = ['Plein jour', 'Crépuscule', 'Nuit éclairée', 'Nuit non éclairée', 'Nuit sans éclairage'];
 const ATM_OPTIONS = ['Normale', 'Temps couvert', 'Pluie légère', 'Pluie forte', 'Vent fort - tempête', 'Brouillard - fumée', 'Neige - grêle', 'Temps éblouissant'];
 const ATM_ABBREV  = ['Normale', 'Couvert', 'Pluie légère', 'Pluie forte', 'Tempête', 'Brouillard', 'Neige', 'Éblouissant'];
-const MODEL_OPTIONS = [
-    { value: 'bisecting_kmeans', label: 'Bisecting K-Means' },
-    { value: 'kmeans',           label: 'K-Means' },
-    { value: 'gmm',              label: 'Gaussian Mixture Model' },
-];
 
 const GRAVITE = [
     { key: 'pct_indemne',      label: 'Indemne',      color: '#38A169', bg: '#F0FFF4', border: '#38A169' },
@@ -68,7 +63,7 @@ const SELECT_STYLE = {
 
 const DEFAULT_FORM = {
     lum: 'Plein jour', atm: 'Normale', agg: 'En agglomération',
-    catr: 'Voie Communales', vma: 50, model: 'bisecting_kmeans',
+    catr: 'Voie Communales', vma: 50,
 };
 
 // ── Hook animation ────────────────────────────────────────────────────────────
@@ -240,7 +235,7 @@ export default function Simulateur() {
             setLoading(true); setError(null);
             try {
                 const params = new URLSearchParams({
-                    dep, model: form.model,
+                    dep,
                     lum: form.lum, atm: form.atm, agg: form.agg,
                     catr: form.catr, catv: 'VL seul', vma: String(form.vma),
                 });
@@ -251,7 +246,7 @@ export default function Simulateur() {
             finally { setLoading(false); }
         }, 400);
         return () => clearTimeout(timer);
-    }, [dep, form.lum, form.atm, form.agg, form.catr, form.vma, form.model]);
+    }, [dep, form.lum, form.atm, form.agg, form.catr, form.vma]);
 
     const setAgg = (newAgg) => {
         const validC = CATR_BY_AGG[newAgg];
@@ -289,20 +284,12 @@ export default function Simulateur() {
                 <Box flex={1} bg="white" p={6} borderRadius="xl" boxShadow="md"
                     border="1px solid" borderColor="gray.100">
 
-                    <Flex gap={4} mb={6} direction={{ base: 'column', sm: 'row' }}>
-                        <Box flex={2}>
-                            <Text fontSize="xs" fontWeight="medium" color="gray.500" mb={1}>Département</Text>
-                            <select value={dep} onChange={e => setDep(e.target.value)} style={SELECT_STYLE}>
-                                {departments.map(d => <option key={d.code} value={d.code}>{d.nom} ({d.code})</option>)}
-                            </select>
-                        </Box>
-                        <Box flex={2}>
-                            <Text fontSize="xs" fontWeight="medium" color="gray.500" mb={1}>Modèle</Text>
-                            <select value={form.model} onChange={e => set('model', e.target.value)} style={SELECT_STYLE}>
-                                {MODEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                        </Box>
-                    </Flex>
+                    <Box mb={6}>
+                        <Text fontSize="xs" fontWeight="medium" color="gray.500" mb={1}>Département</Text>
+                        <select value={dep} onChange={e => setDep(e.target.value)} style={SELECT_STYLE}>
+                            {departments.map(d => <option key={d.code} value={d.code}>{d.nom} ({d.code})</option>)}
+                        </select>
+                    </Box>
 
                     <VStack align="stretch" gap={6} divider={<Box h="1px" bg="gray.100" />}>
                         <SliderField icon={LuSun}   label="Luminosité"        value={form.lum} options={LUM_OPTIONS} abbrev={LUM_ABBREV} onChange={v => set('lum', v)} />
@@ -351,35 +338,6 @@ export default function Simulateur() {
                                         bg={g.bg} border={g.border} />
                                 ))}
                             </Flex>
-
-                            {/* Contributions */}
-                            <Box>
-                                <Text fontSize="xs" fontWeight="bold" color="gray.500"
-                                    textTransform="uppercase" letterSpacing="wider" mb={2}>
-                                    Clusters contributeurs
-                                </Text>
-                                <VStack align="stretch" gap={2}>
-                                    {result.contributions?.map(c => (
-                                        <Box key={c.cluster_number}>
-                                            <Flex align="center" gap={2} mb="2px">
-                                                <Text fontSize="xs" fontWeight="semibold" color="gray.600" minW="64px">
-                                                    Cluster {c.cluster_number + 1}
-                                                </Text>
-                                                <Box flex={1} h="7px" bg="gray.100" borderRadius="full" overflow="hidden">
-                                                    <Box h="100%" bg="blue.400" borderRadius="full"
-                                                        transition="width 0.4s" style={{ width: `${c.poids}%` }} />
-                                                </Box>
-                                                <Text fontSize="xs" color="blue.600" fontWeight="bold" minW="36px" textAlign="right">
-                                                    {c.poids}%
-                                                </Text>
-                                            </Flex>
-                                            {c.profil && (
-                                                <Text fontSize="xs" color="gray.400" pl="72px" lineHeight="short">{c.profil}</Text>
-                                            )}
-                                        </Box>
-                                    ))}
-                                </VStack>
-                            </Box>
 
                         </VStack>
                     )}
