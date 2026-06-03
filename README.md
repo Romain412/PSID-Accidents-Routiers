@@ -170,46 +170,21 @@ cd PSID-Accidents-Routiers
 
 ### 2. Lancer le backend Django
 
+Des scripts tout-en-un gèrent automatiquement toutes les étapes (venv, dépendances, migrations, import, clustering) et ignorent les étapes déjà effectuées.
+
 #### Windows
-
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate
-
-pip install --upgrade pip
-pip install -r requirements.txt
-
-python manage.py migrate
-python manage.py import_csv
-python manage.py train_clustering
-python manage.py compute_risk_profiles
-python manage.py compute_cluster_profiles
-python manage.py runserver
+```bat
+start_backend.bat
 ```
 
 #### macOS / Linux
-
 ```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-
-pip install --upgrade pip
-pip install -r requirements.txt
-
-python manage.py migrate
-python manage.py import_csv
-python manage.py train_clustering
-python manage.py compute_risk_profiles
-python manage.py compute_cluster_profiles
-python manage.py runserver
+./start_backend.sh
 ```
 
 L'API sera disponible sur **http://localhost:8000**
 
-> ⚠️ `import_csv` charge les 4 fichiers CSV BAAC — prévoir quelques minutes.  
-> ⚠️ `train_clustering` entraîne les 3 modèles ML sur 54 402 accidents — prévoir 1-2 minutes.
+> ⚠️ Au premier lancement, `import_csv` et `train_clustering` prennent quelques minutes.
 
 ### 3. Lancer le frontend React
 
